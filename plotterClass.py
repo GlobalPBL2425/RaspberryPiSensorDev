@@ -1,13 +1,34 @@
-import matplotlib.pyplot as plt
-import time 
+import matplotlib.pyplot as plt 
+from collections import deque
 
 class plotterFunc:
     def __init__(self):
+        self.temperature_data = deque(maxlen=50)
+        self.humidity_data = deque(maxlen=50)
+        self.time_data= deque(maxlen=50)
         self.ax1 = None
 
-    
+    def plotingFunc(self,temperature, humidity,current_time):
+        if temperature is not None and humidity is not None:
+                print(f"Temperature: {temperature:.1f} °C    Humidity: {humidity:.1f}%")
+                
+                # Append the new data to the deques
+                self.temperature_data.append(temperature)
+                self.humidity_data.append(humidity)
+                self.time_data.append(current_time)
+                
+                # Update the plot with the new data
+                self.update_plot(self.time_data,self.temperature_data,self.humidity_data)
+
+        else:
+            print("Failed to retrieve data from the sensor")
+
+
+            
+
     def update_plot(self , time_data,temperature_data,humidity_data):
         # Clear the plots
+        
         self.ax1.clear()
         self.ax2.clear()
 
