@@ -60,8 +60,8 @@ with open(csv_file, mode="w", newline="") as file:
             # Read temperature and humidity from the sensor
             temperature = dht_device.temperature
             humidity = dht_device.humidity
-            current_time = time.time() - start_time  # Calculate time elapsed
-            writer.writerow([time.time(), temperature, humidity])
+            current_time = datetime.datetime.now()  # Calculate time elapsed
+            writer.writerow([current_time, temperature, humidity])
 
             if temperature is not None and humidity is not None:
                 print(f"Temperature: {temperature:.1f} °C    Humidity: {humidity:.1f}%")
