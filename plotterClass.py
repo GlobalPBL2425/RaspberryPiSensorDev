@@ -6,7 +6,7 @@ class plotterFunc:
         self.temperature_data = deque(maxlen=50)
         self.humidity_data = deque(maxlen=50)
         self.time_data= deque(maxlen=50)
-        self.ax1 = None
+        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(10, 6))
 
     def plotingFunc(self,temperature, humidity,current_time):
         if temperature is not None and humidity is not None:
@@ -24,7 +24,7 @@ class plotterFunc:
             print("Failed to retrieve data from the sensor")
 
 
-            
+
 
     def update_plot(self , time_data,temperature_data,humidity_data):
         # Clear the plots
