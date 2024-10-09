@@ -1,6 +1,8 @@
 import boto3
 from paho.mqtt.client import Client
 import json
+import time , datetime
+import threading
 
 class AWSSensor:
     def __init__(self, bucket , arrayName , sensorId):
@@ -21,3 +23,22 @@ class AWSSensor:
             "humidity" : humd
         }
         return json.dumps(radict)
+    
+class Master():
+    def __init__(self , master ,timing , topic, ):
+        self.master = master
+        self.timing = timing*60
+        self.client = boto3.client('iot-data')
+        self.readflag = 1
+        
+
+    def timing(self):
+        time.sleep(self.timing)
+        self.readflag = True
+        
+    def mainFunc():
+
+
+
+class Slave():
+    
