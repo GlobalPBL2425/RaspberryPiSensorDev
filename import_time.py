@@ -23,7 +23,7 @@ fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6))
 csv_file = "dht22_readings.csv"
 
 # グラフの更新関数 -Function to update the plot
-def update_plot():
+def update_plot():  
     #グラフをクリア Clear the plots
     ax1.clear()
     ax2.clear()
