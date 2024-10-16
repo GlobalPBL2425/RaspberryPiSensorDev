@@ -1,7 +1,7 @@
 import boto3
 from paho.mqtt.client import mqtt
 import json
-import time , datetim
+import time , datetime
 import threading
 import datetime
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
@@ -146,10 +146,9 @@ class Slave:
         
         if command.get("command") == True:
             print("Starting data collection...")
-
+            self.client.publish(self.validtopic, "Hi, paho mqtt client works fine!", 0)
         elif command.get("command") == False:
             print("Stop reading data")
 
     def run(self):
-
-        self.client.publish("test_topic", "Hi, paho mqtt client works fine!", 0)
+        self.mqtt_client.subscribe(self.commandTopic, 1, self.on_message)
