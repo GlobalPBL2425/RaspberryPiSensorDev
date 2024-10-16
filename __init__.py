@@ -23,25 +23,6 @@ validotopics = [
 
 
 
-class Controller:
-    def __init__(self , master ,timing):
-        self.master = master
-        self.timing = timing*60
-        self.sensor = sensorPool
-        self.masterFunc = None
-        self.slaveFunc = None
-
-    def on_start(self):
-        #to set the rpi up as slave of master
-        if self.master:
-            self.masterFunc = Master()
-        else:
-            self.slaveFunc = Slave()
-
-    def mainFunc(self):
-        if self.master:
-            
-        else:
             
 if __name__ == "__main__":
     #initializing the pools
