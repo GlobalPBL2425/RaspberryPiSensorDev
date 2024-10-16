@@ -4,11 +4,26 @@ import adafruit_dht
 from plotterClass import plotterFunc
 from csvClass import csvFunc
 import datetime
+from multiprocessing import Process, Queue
 
-class sensorReading():
+class sensorPool(Process):
+    def __init__(self, sensor_queue:Queue, daemon):
+        Process.__init__(self, daemon=daemon)
+        self.sensorFunc = sensorReading()
+        self.sensor_queue = sensor_queue
+    def run(self):
+        while True:
+            self.sensorFunc.flag = True
+            sensor = self.sensorFunc.readSensor()
+            if self.sensor_queue.empty():
+                    self.sensor_queue.put(sensor)
+
+            
+
+
+class sensorReading:
     def __init__(self):
         self.dht_device = adafruit_dht.DHT22(board.D16)
-        self.startTime = None
         self.instance = [0,0]
         self.flag = False
 
@@ -25,8 +40,9 @@ class sensorReading():
                 # Store the values in self.instance
                 self.instance = [temperature, humidity]
                 print(f"Local Time: {formatted_time}, Temp: {temperature}, Humidity: {humidity}")
+                
                 self.flag = False
-
+                return self.instance
             except RuntimeError as error:
                 # repeats until gets temperature
                 print(f"Error: {error.args[0]}")

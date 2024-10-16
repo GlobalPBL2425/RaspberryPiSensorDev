@@ -1,10 +1,30 @@
 import boto3
-from paho.mqtt.client import Client
+from paho.mqtt.client import mqtt
 import json
 import time , datetim
 import threading
 import datetime
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
+from multiprocessing import Process, Queue
+
+class ControllerPool:
+    def __init__(self , master ,timing):
+        self.master = master
+        self.timing = timing*60
+        self.masterFunc = None
+        self.slaveFunc = None
+
+    def on_start(self):
+        #to set the rpi up as slave of master
+        if self.master:
+            self.masterFunc = Master()
+        else:
+            self.slaveFunc = Slave()
+
+    def mainFunc(self):
+        if self.master:
+            print()
+            
 
 class AWSSensor:
     def __init__(self, bucket , arrayName , sensorId):
@@ -74,7 +94,6 @@ class Master():
 
         print("Waiting for acknowledgements...")
         
-
         ####---revamp this part --- #####
         # Loop until all topics have responded
         while not all(self.receivedTopics.values()):
@@ -89,8 +108,53 @@ class Master():
             self.mqtt_client.unsubscribe(topic)
 
 
+import paho.mqtt.client as mqtt
+import json
 
-
-class Slave():
-    def __init__(self):
+class Slave:
+    def __init__(self, commandtopic, validtopic, sensorNum):
         self.readflag = 1
+        self.commandTopic = commandtopic
+        self.validtopic = validtopic[sensorNum]
+        self.client = mqtt.Client()
+        self.readflag = False
+
+    def on_start(self):
+        # Assign the on_message callback
+        self.client.on_message = self.on_message
+
+        # Connect to the MQTT broker (AWS IoT endpoint)
+        self.client.connect("your-aws-iot-endpoint")
+
+        # Subscribe to the command topic
+        self.client.subscribe(self.commandTopic)
+
+        # Start the MQTT client loop
+        self.client.loop_forever()
+
+    # Define the callback for message reception
+    def on_message(self, client, userdata, message):
+        command = json.loads(message.payload.decode("utf-8"))
+        print("Received command:", command)
+        
+        if command.get("command") == True:
+            print("Starting data collection...")
+
+        elif command.get("command") == False:
+            print("Stop reading data")
+
+
+    
+    
+
+# Function to start data collection (placeholder)
+def start_data_collection():
+    # Collect data from sensors, etc.
+    print("Collecting data...")
+
+# Function to sync data to AWS S3
+def sync_data_to_s3():
+    # Sync collected data to S3
+    print("Syncing to S3...")
+
+# Initialize MQTT client and subscribe to the command topic
