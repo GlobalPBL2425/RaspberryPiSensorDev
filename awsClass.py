@@ -7,12 +7,16 @@ import datetime
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from multiprocessing import Process, Queue
 
-class ControllerPool:
-    def __init__(self , master ,timing):
+
+class ControllerPool(Process):
+    def __init__(self, master, timing, daemon, bucket, arrayName, sensorId, sensor_queue):
+        Process.__init__(self, daemon=daemon)
         self.master = master
         self.timing = timing*60
         self.masterFunc = None
         self.slaveFunc = None
+        self.sensor_queue = sensor_queue
+        self.AWS = AWSSensor(bucket , arrayName , sensorId)
 
     def on_start(self):
         #to set the rpi up as slave of master
@@ -23,16 +27,21 @@ class ControllerPool:
 
     def mainFunc(self):
         if self.master:
-            print()
-            
+            while True:
+                self.masterFunc.mainFunc()
+                self.AWS.upload(temp=self.sensor_queue[0], humd=self.sensor_queue[1], timestamp= self.masterFunc.timestamp)
+                self.masterFunc.acknowledgement()
+        else:
+            while True:
+                self.slaveFunc
 
 class AWSSensor:
-    def __init__(self, bucket , arrayName , sensorId):
+    def __init__(self, bucket, arrayName, sensorId):
         self.s3_client = boto3.client('s3')
         self.bucket = bucket
         self.filepath = f"{arrayName}/{sensorId}"
 
-    def upload(self , temp ,humd, timestamp):    
+    def upload(self, temp, humd, timestamp):    
         jsonString = self.Jsonify(temp , humd)
         KeyName = f"{self.filepath}/{timestamp}.json"
         self.s3_client.put_object(Bucket=self.bucket, Key=KeyName, Body=jsonString, ContentType='application/json')
@@ -45,7 +54,8 @@ class AWSSensor:
             "humidity" : humd
         }
         return json.dumps(radict)
-    
+
+
 class Master():
     def __init__(self , master ,timing , commandtopic, validtopics):
         self.master = master
@@ -66,20 +76,20 @@ class Master():
         self.controlFlag = False #Controls the sensor class to read or write
 
     def mainFunc(self):
-
-        while True:
-            self.message['Command'] = True
-            self.readflag = True
-            self.timestamp = datetime.datetime.now
-            self.iot_client.publish(topic=self.commandTopic,
-                qos=1,  # QoS level 1 ensures delivery at least once
-                payload=json.dumps(self.message)
-            )   
-            self.acknowledgement()
-    
-    
-            time.sleep(self.timing)
-            self.readflag = False
+        self.message['Command'] = True
+        self.readflag = True
+        self.timestamp = datetime.datetime.now
+        self.iot_client.publish(topic=self.commandTopic,
+            qos=1,  # QoS level 1 ensures delivery at least once
+            payload=json.dumps(self.message)
+        )   
+        self.iot_client.publish(topic=self.validTopic[0],
+            qos=1,  # QoS level 1 ensures delivery at least once
+            payload=True
+        )   
+        
+        time.sleep(self.timing)
+        self.readflag = False
 
     def on_message(self, client, userdata, message):
         topic = message.topic
@@ -107,9 +117,6 @@ class Master():
         for topic in self.validTopics:
             self.mqtt_client.unsubscribe(topic)
 
-
-import paho.mqtt.client as mqtt
-import json
 
 class Slave:
     def __init__(self, commandtopic, validtopic, sensorNum):
@@ -143,18 +150,6 @@ class Slave:
         elif command.get("command") == False:
             print("Stop reading data")
 
+    def run(self):
 
-    
-    
-
-# Function to start data collection (placeholder)
-def start_data_collection():
-    # Collect data from sensors, etc.
-    print("Collecting data...")
-
-# Function to sync data to AWS S3
-def sync_data_to_s3():
-    # Sync collected data to S3
-    print("Syncing to S3...")
-
-# Initialize MQTT client and subscribe to the command topic
+        self.client.publish("test_topic", "Hi, paho mqtt client works fine!", 0)
