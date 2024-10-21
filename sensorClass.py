@@ -16,9 +16,7 @@ class sensorPool(Process):
             self.sensorFunc.flag = True
             sensor = self.sensorFunc.readSensor()
             if self.sensor_queue.empty():
-                    self.sensor_queue.put(sensor)
-
-            
+                self.sensor_queue.put(sensor)
 
 
 class sensorReading:
@@ -49,4 +47,38 @@ class sensorReading:
                 continue
             except Exception as e:
                 print(f"Unexpected error: {str(e)}")
-                continue 
+                continue
+
+
+
+#Testing Function
+def test_sensor_pool():
+    # Create a Queue to communicate between processes
+    sensor_queue = Queue()
+
+    # Initialize the sensorPool as a separate process
+    sensor_process = sensorPool(sensor_queue=sensor_queue, daemon=True)
+
+    # Start the sensor process
+    sensor_process.start()
+
+    # Run the test for a few seconds to gather sensor data
+    try:
+        start_time = time.time()
+        while True:  # Test for 10 seconds
+            if not sensor_queue.empty():
+                sensor_data = sensor_queue.get()
+                temperature, humidity = sensor_data
+                print(f"Test - Sensor Data Received: Temperature: {temperature}, Humidity: {humidity}")
+            else:
+                print("Waiting for sensor data...")
+            time.sleep(1)  # Poll the queue every second
+    except KeyboardInterrupt:
+        print("Test interrupted.")
+    finally:
+        # Ensure the sensor process is terminated after the test
+        sensor_process.terminate()
+        sensor_process.join()
+
+if __name__ == "__main__":
+    test_sensor_pool()

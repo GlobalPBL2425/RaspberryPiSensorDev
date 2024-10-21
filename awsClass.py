@@ -18,25 +18,28 @@ class ControllerPool(Process):
         self.sensor_queue = sensor_queue
         self.AWS = AWSSensor(bucket , arrayName , sensorId)
         self.thershold_queue = thershold_queue
+        # to be change
+        self.slaveFunc = Slave(AWS=self.AWS, commandTopic="sensor/command", validtopic=["sensor/valid"], 
+                            motorCommand="sensor/motor", sensorNum=0, sensorqueue=self.sensor_queue)
+        def run(self):
+        # Initialize SlaveFunc here
+           
+            
+            # Start SlaveFunc in a separate thread to handle MQTT communication
+            slave_thread = threading.Thread(target=self.slaveFunc.on_start)
+            slave_thread.start()
 
-    def on_start(self):
-        #to set the rpi up as slave of master
-        if self.master:
-            self.masterFunc = Master()
-        else:
-            self.slaveFunc = Slave()
-
-    def mainFunc(self):
-        if self.master:
-            while True:
-                self.masterFunc.mainFunc()
-                self.AWS.upload(temp=self.sensor_queue[0], humd=self.sensor_queue[1], timestamp= self.masterFunc.timestamp)
-                self.masterFunc.acknowledgement()
-        else:
-            while True:
-                self.slaveFunc
+            # Main loop to handle processing
+            while self.running:
+                self.slaveFunc  # Initialize if not done already
                 if self.thershold_queue.empty():
-                    self.sensor_queue.put(self.slaveFunc.motorThres)
+                    # Check if motor threshold from Slave is ready
+                    if self.slaveFunc.motorThres is not None:
+                        self.thershold_queue.put(self.slaveFunc.motorThres)
+                time.sleep(1)  # Avoid tight looping, add some delay
+
+    def stop(self):
+        self.running = False
 
 class AWSSensor:
     def __init__(self, bucket, arrayName, sensorId):
@@ -59,8 +62,75 @@ class AWSSensor:
         return json.dumps(radict)
 
 
+
+
+class Slave:
+    def __init__(self, AWS,  commandTopic, validtopic, motorCommand, sensorNum, sensorqueue):
+        self.readflag = 1
+        self.commandTopic = commandTopic
+        self.motorCommand = motorCommand
+        self.validtopic = validtopic[sensorNum]
+        self.client = Client()
+        self.readflag = False
+        self.motorThres = None
+        self.AWS = AWS
+        self.sensor_queue = sensorqueue
+ 
+
+    def on_start(self):
+        # Assign the on_message callback
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+
+        # Connect to the MQTT broker (AWS IoT endpoint)
+        self.client.connect("your-aws-iot-endpoint")
+
+        # Subscribe to the command topic
+        self.client.subscribe(self.commandTopic)
+
+        # Start the MQTT client loop
+        self.client.loop_forever()
+    
+    def on_connect(self,client, userdata, flags, rc):
+        if rc == 0:
+            print("Connected to MQTT broker")
+            client.subscribe(self.commandTopic)
+            client.subscribe(self.motorCommand)
+        else:
+            print("Failed to connect to MQTT broker")
+
+    # Define the callback for message reception
+    def on_message(self, client, userdata, message):
+        msg = message.payload.decode("utf-8")    
+        if msg.topic == self.commandTopic:
+            command = json.loads(msg)
+            print("Received command:", command)
+
+            if command.get("command") == True:
+                print("Starting data collection...")
+                self.AWS.upload(temp=self.sensor_queue[0], humd=self.sensor_queue[1], timestamp= command.get("timestamp"))
+                self.client.publish(self.validtopic, "Data published", 0)
+
+            elif command.get("command") == False:
+                print("Stop reading data")
+        elif msg.topic == self.motorCommand:
+            motor = json.loads(msg)
+            self.motorThres = motor
+
+    def run(self):
+        time.sleep(0.5)
+
+
+
+
+
+
+
+
+
+"""
 class Master():
-    def __init__(self , master ,timing , commandtopic, validtopics):
+    def __init__(self , master ,timing , commandtopic, motorCommand, validtopics):
         self.master = master
         self.timing = timing*60
         self.iot_client = boto3.client('iot-data' , 'reagion name')
@@ -69,7 +139,7 @@ class Master():
         self.mqtt_client = AWSIoTMQTTClient("MyClientID")
         self.mqtt_client.configureEndpoint("your-endpoint.iot.region.amazonaws.com", 8883)
         self.mqtt_client.configureCredentials("root-CA.crt", "private.pem.key", "certificate.pem.crt")
-
+        self.motorCommand = motorCommand
         self.validTopic = validtopics
         self.timestamp = None 
         self.message = {
@@ -104,7 +174,7 @@ class Master():
         # Subscribe to all valid topics
         for topic in self.validTopics:
             self.mqtt_client.subscribe(topic, 1, self.on_message)
-
+        self.mqtt_client.subscribe(self.motorCommand, 1, self.on_message)
         print("Waiting for acknowledgements...")
         
         ####---revamp this part --- #####
@@ -119,54 +189,4 @@ class Master():
         # Unsubscribe after receiving acknowledgements
         for topic in self.validTopics:
             self.mqtt_client.unsubscribe(topic)
-
-
-class Slave:
-    def __init__(self, commandtopic, validtopic, motorCommand, sensorNum):
-        self.readflag = 1
-        self.commandTopic = commandtopic
-        self.motorCommand = motorCommand
-        self.validtopic = validtopic[sensorNum]
-        self.client = Client()
-        self.readflag = False
-        self.motorThres = None
-
-    def on_start(self):
-        # Assign the on_message callback
-        self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message
-
-        # Connect to the MQTT broker (AWS IoT endpoint)
-        self.client.connect("your-aws-iot-endpoint")
-
-        # Subscribe to the command topic
-        self.client.subscribe(self.commandTopic)
-
-        # Start the MQTT client loop
-        self.client.loop_forever()
-    
-    def on_connect(self,client, userdata, flags, rc):
-        if rc == 0:
-            print("Connected to MQTT broker")
-            client.subscribe(self.commandtopic)
-            client.subscribe(self.motorCommand)
-        else:
-            print("Failed to connect to MQTT broker")
-
-    # Define the callback for message reception
-    def on_message(self, client, userdata, message):
-        msg = message.payload.decode()    
-        if msg.topic == self.commandTopic:
-            command = json.loads(message.payload.decode("utf-8"))
-            print("Received command:", command)
-            if command.get("command") == True:
-                print("Starting data collection...")
-                self.client.publish(self.validtopic, "Hi, paho mqtt client works fine!", 0)
-            elif command.get("command") == False:
-                print("Stop reading data")
-        elif msg.topic == self.motorCommand:
-            motor = json.loads(message.payload.decode("utf-8"))
-            self.motorThres = motor
-
-    def run(self):
-        self.mqtt_client.subscribe(self.commandTopic, 1, self.on_message)
+"""

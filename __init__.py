@@ -1,11 +1,13 @@
 import time
 import os
 import multiprocessing as mp
-from awsClass import Slave, Master,AWSSensor
-from sensorClass import sensorReading
+from awsClass import ControllerPool,AWSSensor
+from sensorClass import sensorPool
+from motorClass import MotorPool
 import datetime
 
-controller = "master"
+
+
 
 arrayName = "SensorArray_1"
 sensorId = "Rpi-sensor_01"
@@ -27,6 +29,12 @@ validotopics = [
 if __name__ == "__main__":
     #initializing the pools
     sensorPool = {}
+    motorPool = {}
+    controlPool = {}
+
+
+
+
 
 
 #master and slave diff
