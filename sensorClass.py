@@ -15,8 +15,15 @@ class sensorPool(Process):
         while True:
             self.sensorFunc.flag = True
             sensor = self.sensorFunc.readSensor()
-            if self.sensor_queue.empty():
-                self.sensor_queue.put(sensor)
+            
+            self.empty_queue()
+            self.sensor_queue.put(sensor)
+    def empty_queue(self):  
+        while not self.sensor_queue.empty():
+            try:
+                self.sensor_queue.get_nowait()  # Non-blocking get to empty the queue
+            except:
+                break  #
 
 
 class sensorReading:
@@ -57,7 +64,7 @@ def test_sensor_pool():
     sensor_queue = Queue()
 
     # Initialize the sensorPool as a separate process
-    sensor_process = sensorPool(sensor_queue=sensor_queue, daemon=True)
+    sensor_process = sensorPool(sensor_queue=sensor_queue, daemon=False)
 
     # Start the sensor process
     sensor_process.start()
@@ -65,11 +72,15 @@ def test_sensor_pool():
     # Run the test for a few seconds to gather sensor data
     try:
         start_time = time.time()
-        while True:  # Test for 10 seconds
+        while True:  
             if not sensor_queue.empty():
                 sensor_data = sensor_queue.get()
                 temperature, humidity = sensor_data
                 print(f"Test - Sensor Data Received: Temperature: {temperature}, Humidity: {humidity}")
+                # Clear the queue (removing any leftover items)
+                while not sensor_queue.empty():
+                    sensor_queue.get()#most important line
+                
             else:
                 print("Waiting for sensor data...")
             time.sleep(1)  # Poll the queue every second

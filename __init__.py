@@ -1,12 +1,20 @@
 import time
 import os
 import multiprocessing as mp
-from awsClass import ControllerPool,AWSSensor
 from sensorClass import sensorPool
 from motorClass import MotorPool
 import datetime
 
 
+"""
+MQTT INFO 
+# MQTT
+mqtt_broker = "127.0.0.1"
+mqtt_port = 1883
+topics
+arrayName = "SensorArray_1"
+sensorId = "Rpi-sensor_01" 
+"""
 
 
 arrayName = "SensorArray_1"

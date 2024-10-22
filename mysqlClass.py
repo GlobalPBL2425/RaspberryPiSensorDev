@@ -5,27 +5,41 @@ from paho.mqtt.client import Client
 import json
 
 
-"""
-MQTT INFO 
-# MQTT
-mqtt_broker = "127.0.0.1"
-mqtt_port = 1883
-topics
-arrayName = "SensorArray_1"
-sensorId = "Rpi-sensor_01" 
-"""
-
 
 class ControllerPool(Process):
     def __init__(self,arrayName, sensorId, sensor_queue, thershold_queue:Queue, daemon):
         Process.__init__(self, daemon=daemon)
-        Process.__init__(self, daemon=daemon)
         self.slaveFunc = None
         self.sensor_queue = sensor_queue
         self.thershold_queue = thershold_queue
-        # to be change
-        self.slaveFunc = MQTTFunc()
-class MySQLPool:
+        self.MYSQL = MySQL(sensor_ID=sensorId,arrayName=arrayName)
+
+    def run(self):
+        # Initialize SlaveFunc here
+           
+            
+            # Start SlaveFunc in a separate thread to handle MQTT communication
+            slave_thread = threading.Thread(target=self.slaveFunc.on_start)
+            slave_thread.start()
+
+            # Main loop to handle processing
+            while self.running:
+                self.slaveFunc  # Initialize if not done already
+                if self.thershold_queue.empty():
+                    # Check if motor threshold from Slave is ready
+                    if self.slaveFunc.motorThres is not None:
+                        self.thershold_queue.put(self.slaveFunc.motorThres)
+                time.sleep(1)  # Avoid tight looping, add some delay
+
+    def stop(self):
+        self.running = False
+
+
+
+
+
+
+class MySQL:
     def __init__(self, sensor_queue, sensor_ID, arrayName):
         self.conn = pymysql.connect(host='172.20.10.2', 
                             port=3306, 
@@ -40,6 +54,7 @@ class MySQLPool:
         self.sensor_ID = sensor_ID
         self.arrayName = arrayName
     def on_start(self):
+        #One table(ID , Robot ID ,timestamp TIMESTAMP , humidity FLOAT NOT NULL, temperature FLOAT NOT NULL , (command type (auto/timer)){thersholds}, PWM of motor(%))
         readingTable = f"""CREATE TABLE IF NOT EXISTS {self.sensor_ID} (
                     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     timestamp TIMESTAMP NOT NULL,
@@ -48,6 +63,7 @@ class MySQLPool:
                     )
                     ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
         self.cursor.execute(readingTable)
+        #another table (temperature conditions (cold , hot , normal),)
         arrayTable = f"""CREATE TABLE IF NOT EXISTS ArrayTable (
                 id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 sensor_ID VARCHAR(128) NOT NULL,
@@ -79,61 +95,6 @@ class MySQLPool:
         self.cursor.close()
         self.conn.close()
 
-class MQTTFunc:
-    def __init__(self, mySQLFunc, commandTopic, validtopic, motorCommand, sensorNum, sensorqueue, mqtt_broker, mqtt_port):
-        self.readflag = 1
-        self.commandTopic = commandTopic
-        self.motorCommand = motorCommand
-        self.mqtt_broker = mqtt_broker
-        self.mqtt_port = mqtt_port
-        self.validtopic = validtopic[sensorNum]
-        self.client = Client()
-        self.readflag = False
-        self.motorThres = None
-        self.mySQLFunc = mySQLFunc
-        self.sensor_queue = sensorqueue
- 
-
-    def on_start(self):
-        # Assign the on_message callback
-        self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message
-
-        # Connect to the MQTT broker (actuall mqtt)
-        self.client.connect(self.mqtt_broker, self.mqtt_port, keepalive=60)
-
-        # Start the MQTT client loop
-        self.client.loop_forever()
-    
-    def on_connect(self,client, userdata, flags, rc):
-        if rc == 0:
-            # Subscribe to the command topic
-            print("Connected to MQTT broker")
-            client.subscribe(self.commandTopic)
-            client.subscribe(self.motorCommand)
-        else:
-            print("Failed to connect to MQTT broker")
-
-    # Define the callback for message reception
-    def on_message(self, client, userdata, message):
-        msg = message.payload.decode("utf-8")    
-        if msg.topic == self.commandTopic:
-            command = json.loads(msg)
-            print("Received command:", command)
-
-            if command.get("command") == True:
-                print("Starting data collection...")
-                self.mySQLFunc.upload(temp=self.sensor_queue[0], humd=self.sensor_queue[1], timestamp= command.get("timestamp"))
-                self.client.publish(self.validtopic, "Data published", 0)
-
-            elif command.get("command") == False:
-                print("Stop reading data")
-        elif msg.topic == self.motorCommand:
-            motor = json.loads(msg)
-            self.motorThres = motor
-
-    def run(self):
-        time.sleep(0.5)
 
 """
 

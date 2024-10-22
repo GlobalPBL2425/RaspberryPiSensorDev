@@ -9,19 +9,15 @@ from multiprocessing import Process, Queue
 
 
 class ControllerPool(Process):
-    def __init__(self, master, timing, daemon, bucket, arrayName, sensorId, sensor_queue, thershold_queue:Queue):
+    def __init__(self, daemon, bucket, arrayName, sensorId, sensor_queue, thershold_queue:Queue):
         Process.__init__(self, daemon=daemon)
-        self.master = master
-        self.timing = timing*60
-        self.masterFunc = None
-        self.slaveFunc = None
         self.sensor_queue = sensor_queue
         self.AWS = AWSSensor(bucket , arrayName , sensorId)
         self.thershold_queue = thershold_queue
         # to be change
         self.slaveFunc = Slave(AWS=self.AWS, commandTopic="sensor/command", validtopic=["sensor/valid"], 
                             motorCommand="sensor/motor", sensorNum=0, sensorqueue=self.sensor_queue)
-        def run(self):
+    def run(self):
         # Initialize SlaveFunc here
            
             
@@ -119,13 +115,6 @@ class Slave:
 
     def run(self):
         time.sleep(0.5)
-
-
-
-
-
-
-
 
 
 """
