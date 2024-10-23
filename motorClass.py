@@ -3,11 +3,12 @@ import RPi.GPIO as GPIO
 import time
 
 class MotorPool(Process):
-    def __init__(self, sensor_queue, threshold_queue, daemon):
+    def __init__(self, sensor_queue, threshold_queue, motorPWM : Queue, daemon):
         super().__init__(daemon=daemon)
         self.sensor_queue = sensor_queue
         self.threshold_queue = threshold_queue
         self.motorfunc = MotorFunc()
+        self.motorPWM = motorPWM
 
     def run(self):
         while True:
@@ -20,19 +21,16 @@ class MotorPool(Process):
 
             if sensor_reading:  # Ensure sensor_reading is not None
                 self.motorfunc.motorcontrol(sensor_reading=sensor_reading)
+                self.empty_queue()
+                self.motorPWM.put(self.motorfunc.dutycycle)
             time.sleep(0.5)  # Small delay to avoid overloading the loop
 
-    def get_latest_queue_item(self, sensor_queue):
-        latest_data = None
-        while not sensor_queue.empty():
+    def empty_queue(self):  
+        while not self.motorPWM.empty():
             try:
-                # Continuously get items from the queue, overwriting old data
-                latest_data = sensor_queue.get_nowait()
-            except Exception as e:
-                print(f"Error retrieving from sensor queue: {e}")
-                break
-
-        return latest_data
+                self.motorPWM.get_nowait()  # Non-blocking get to empty the queue
+            except:
+                break  #
 
 
 class MotorFunc:
@@ -49,6 +47,7 @@ class MotorFunc:
         }
         self.commandtype = "auto"
         self.change = False
+        self.dutycycle = 0
 
     def setup_gpio(self):
         GPIO.setwarnings(False)  # Disable warnings
@@ -61,19 +60,25 @@ class MotorFunc:
         if self.commandtype == "auto":
             if sensor_reading[0] <= self.thresholds["min_temp"]:
                 self.pi_pwm.ChangeDutyCycle(100)
+                self.dutycycle = 100
             elif self.thresholds["max_temp"] > sensor_reading[0] > self.thresholds["min_temp"]:
                 duty = 100 - (sensor_reading[0] - self.thresholds["min_temp"]) / (self.thresholds["max_temp"] - self.thresholds["min_temp"]) * 100
                 self.pi_pwm.ChangeDutyCycle(duty)
+                self.dutycycle = [duty]
             elif sensor_reading[0] >= self.thresholds["max_temp"]:
                 self.pi_pwm.ChangeDutyCycle(0)
+                self.dutycycle = 0
 
             if sensor_reading[1] <= self.thresholds["min_humidity"]:
                 self.pi_pwm.ChangeDutyCycle(100)
+                self.dutycycle = 100
             elif self.thresholds["max_humidity"] > sensor_reading[1] > self.thresholds["min_humidity"]:
                 duty = 100 - (sensor_reading[1] - self.thresholds["min_humidity"]) / (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) * 100
                 self.pi_pwm.ChangeDutyCycle(duty)
+                self.dutycycle = [duty]
             elif sensor_reading[1] >= self.thresholds["max_humidity"]:
                 self.pi_pwm.ChangeDutyCycle(0)
+                self.dutycycle = 0
 
         elif self.commandtype == "timer":
             self.change = True

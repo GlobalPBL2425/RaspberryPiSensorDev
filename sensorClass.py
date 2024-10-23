@@ -16,8 +16,8 @@ class sensorPool(Process):
             self.sensorFunc.flag = True
             sensor = self.sensorFunc.readSensor()
             
-            self.empty_queue()
-            self.sensor_queue.put(sensor)
+            if self.sensor_queue.empty():
+                self.sensor_queue.put(sensor)
     def empty_queue(self):  
         while not self.sensor_queue.empty():
             try:

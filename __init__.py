@@ -13,7 +13,7 @@ mqtt_broker = "127.0.0.1"
 mqtt_port = 1883
 topics
 arrayName = "SensorArray_1"
-sensorId = "Rpi-sensor_01" 
+sensorId = "Rpi_01" 
 """
 
 
