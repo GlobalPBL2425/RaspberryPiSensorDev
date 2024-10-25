@@ -4,7 +4,7 @@ import time
 
 class MotorPool(Process):
     def __init__(self, sensor_queue, threshold_queue, motorPWM : Queue, daemon):
-        super().__init__(daemon=daemon)
+        Process.__init__(self,daemon=daemon)
         self.sensor_queue = sensor_queue
         self.threshold_queue = threshold_queue
         self.motorfunc = MotorFunc()
@@ -51,7 +51,7 @@ class MotorFunc:
 
     def setup_gpio(self):
         GPIO.setwarnings(False)  # Disable warnings
-        GPIO.setmode(GPIO.BOARD)  # Set pin numbering system
+        #GPIO.setmode(GPIO.Board)  # Set pin numbering system
         GPIO.setup(self.motorpin, GPIO.OUT)
         self.pi_pwm = GPIO.PWM(self.motorpin, 1000)  # Create PWM instance with frequency
         self.pi_pwm.start(0)  # Start PWM with 0 Duty Cycle

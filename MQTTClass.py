@@ -4,9 +4,9 @@ import json
 import time
 
 class MQTTFunc(Process):
-    def __init__(self, commandTopic, motorCommand, sensorqueue, mqtt_broker, motorThres : Queue,commandType: Queue, mqtt_port ,daemon):
+    def __init__(self, commandTopic, motorTopic, sensorqueue, mqtt_broker, motorThres : Queue,commandType: Queue, mqtt_port ,daemon):
         Process.__init__(self, daemon=daemon)
-        self.motorCommand = motorCommand
+        self.motorTopic = motorTopic
         self.commandTopic = commandTopic
         self.commandType = commandType
         self.mqtt_broker = mqtt_broker
@@ -18,7 +18,7 @@ class MQTTFunc(Process):
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             # Subscribe to the command topic
-            client.subscribe(self.motorCommand)
+            client.subscribe(self.motorTopic)
             client.subscribe(self.commandTopic)
             print("Connected to MQTT broker")
         else:
