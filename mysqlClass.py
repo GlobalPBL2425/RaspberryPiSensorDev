@@ -7,7 +7,7 @@ import datetime
 
 
 class ControllerPool(Process):
-    def __init__(self,arrayName, sensorId, sensor_queue, interval, motorPWM, commandType, ip= "localhost",daemon):
+    def __init__(self,arrayName, sensorId, sensor_queue, interval, motorPWM, commandType, ip,daemon):
         Process.__init__(self, daemon=daemon)
         self.slaveFunc = None
         self.sensor_queue = sensor_queue
