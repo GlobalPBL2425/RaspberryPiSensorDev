@@ -2,7 +2,6 @@ import time
 import board
 import adafruit_dht
 from plotterClass import plotterFunc
-from csvClass import csvFunc
 import datetime
 from multiprocessing import Process, Queue
 
