@@ -44,9 +44,37 @@ if __name__ == "__main__":
         sensor_queue=sensor_queue,
         daemon=False
     )
-    motor_pool = MotorPool()
-    controllerpool = ControllerPool()
-    mqtt_pool = MQTTFunc()
+
+    motor_pool = MotorPool(
+        sensor_queue=sensor_queue,
+        threshold_queue=threshold_queue,
+        motorPWM=motorPWM_queue,
+        daemon=True
+    )
+    
+    controllerpool = ControllerPool(sensorId="Sensor_001",           # Simulated sensor ID
+        arrayName= "Group1",
+        sensor_queue=sensor_queue,       # Queue for sensor data
+        interval=3,                      # Interval for timestamp rounding in (seconds)
+        motorPWM=motorPWM_queue,         # Queue for motor PWM control
+        commandType=commandType_queue,   # Queue for control type (AUTO/TIMER)
+        daemon=True      )
+    
+    mqtt_pool = MQTTFunc(
+        commandTopic= commandTopic, 
+        motorTopic= motorTopic, 
+        sensorqueue= sensor_queue, 
+        mqtt_broker= mqtt_broker, 
+        motorThres= threshold_queue,
+        commandType= commandType_queue, 
+        mqtt_port= mqtt_port, 
+        daemon= False
+    )
+    sensor_pool.start()
+    controllerpool.start()
+    motor_pool.start()
+    mqtt_pool.start()
+
 
 
 #master and slave diff

@@ -35,7 +35,7 @@ class ControllerPool(Process):
                     timestamp = self.get_rounded_timestamp()
                     self.MYSQL.upload(timestamp=timestamp,temperature=sensor[0],humidity=sensor[1],controlMode=commandType, motorDutyCycle=pwm)
 
-                time.sleep(3)  # Wait 3 seconds before getting the next timestamp
+                time.sleep(self.interval)  # Wait 3 seconds before getting the next timestamp
         finally:
             # Ensure the MySQL connection is closed when the process stops
             self.MYSQL.stop()
@@ -149,6 +149,7 @@ if __name__ == "__main__":
     sensor_queue = Queue()
     motorPWM_queue = Queue()
     commandType_queue = Queue()
+    motorThres =Queue()
 
     # Create a ControllerPool object with test parameters
     controller = ControllerPool(
