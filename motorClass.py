@@ -119,3 +119,54 @@ class MotorFunc:
         """Clean up the GPIO settings."""
         self.pi_pwm.stop()
         GPIO.cleanup()
+
+
+# Test code for MotorPool process
+
+if __name__ == "__main__":
+    # Create queues for inter-process communication
+    sensor_queue = Queue()
+    threshold_queue = Queue()
+    motorPWM_queue = Queue()
+
+    # Initialize MotorPool object with queues and test parameters
+    motor_pool = MotorPool(
+        sensor_queue=sensor_queue,
+        threshold_queue=threshold_queue,
+        motorPWM=motorPWM_queue,
+        daemon=True
+    )
+
+    # Start the MotorPool process
+    motor_pool.start()
+
+    # Simulate sensor data (temperature, humidity)
+    # Example temperature: 25 degrees Celsius, Humidity: 60%
+    sensor_data = (25, 60)
+    sensor_queue.put(sensor_data)
+
+    # Simulate new threshold values (could come from an MQTT message in real use)
+    # Example thresholds: min_temp: 20, max_temp: 35, min_humidity: 30, max_humidity: 70
+    new_thresholds = {
+        "min_temp": 20,
+        "max_temp": 35,
+        "min_humidity": 30,
+        "max_humidity": 70,
+        "time_interval": 0,
+        "duration": 0
+    }
+    threshold_queue.put(new_thresholds)
+
+    # Let the process run for a while to see the motor control behavior
+    time.sleep(5)
+
+    # Retrieve the motor's PWM duty cycle value from the queue
+    if not motorPWM_queue.empty():
+        pwm_duty = motorPWM_queue.get()
+        print(f"Current motor PWM duty cycle: {pwm_duty}%")
+
+    # Stop the MotorPool process after the test
+    motor_pool.terminate()
+    motor_pool.join()
+
+    print("Test completed.")

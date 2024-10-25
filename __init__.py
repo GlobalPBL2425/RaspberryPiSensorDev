@@ -1,48 +1,52 @@
 import time
 import os
-import multiprocessing as mp
+from multiprocessing import Process, Queue
 from sensorClass import sensorPool
 from motorClass import MotorPool
+from MQTTClass import MQTTFunc
+from mysqlClass import ControllerPool
 import datetime
 
 
 """
 MQTT INFO 
 # MQTT
-mqtt_broker = "127.0.0.1"
+mqtt_broker = "test.mosquitto.org"
 mqtt_port = 1883
-topics
+topics = 
 arrayName = "SensorArray_1"
 sensorId = "Rpi_01" 
 """
 
+#MQTT topics to confirm that the sensors send the reading to S3 bucket
+mqtt_broker = "test.mosquitto.org"
+mqtt_port = 1883
+commandTopic = "GPBL2425/controlType"
+motorTopic = "GBPL2425/Motor/threshold"
 
 arrayName = "SensorArray_1"
-sensorId = "Rpi-sensor_01"
+sensorId = "Rpi_01"
 
 
-#MQTT topics to confirm that the sensors send the reading to S3 bucket
-validotopics = [
-    "Rpi-sensor_01",
-    "Rpi-sensor_02",
-    "Rpi-sensor_03",
-    "Rpi-sensor_04",
-    "Rpi-sensor_05",
-    "Rpi-sensor_06"
-]
 
 
 
             
 if __name__ == "__main__":
+    #inititalizing tthe queues
+    sensor_queue = Queue()
+    motorPWM_queue = Queue()
+    commandType_queue = Queue()
+    threshold_queue = Queue()
+
     #initializing the pools
-    sensorPool = {}
-    motorPool = {}
-    controlPool = {}
-
-
-
-
+    sensor_pool = sensorPool(
+        sensor_queue=sensor_queue,
+        daemon=False
+    )
+    motor_pool = MotorPool()
+    controllerpool = ControllerPool()
+    mqtt_pool = MQTTFunc()
 
 
 #master and slave diff
