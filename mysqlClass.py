@@ -7,7 +7,7 @@ import datetime
 
 
 class ControllerPool(Process):
-    def __init__(self,arrayName, sensorId, sensor_queue, interval, motorPWM, commandType,daemon):
+    def __init__(self,arrayName, sensorId, sensor_queue, interval, motorPWM, commandType, ip= "localhost",daemon):
         Process.__init__(self, daemon=daemon)
         self.slaveFunc = None
         self.sensor_queue = sensor_queue
@@ -18,9 +18,10 @@ class ControllerPool(Process):
         self.arrayName = arrayName
         self.interval = interval
         self.motorPWM = motorPWM
+        self.ip = ip
 
     def run(self):
-        self.MYSQL = MySQL(sensor_ID=self.sensorId,arrayName=self.arrayName)
+        self.MYSQL = MySQL(sensor_ID=self.sensorId,arrayName=self.arrayName , ip= self.ip)
         self.MYSQL.on_start()
         try:
             while True:
@@ -51,8 +52,8 @@ class ControllerPool(Process):
         return rounded_now
 
 class MySQL:
-    def __init__(self, sensor_ID, arrayName):
-        self.conn = pymysql.connect(host='localhost', 
+    def __init__(self, sensor_ID, arrayName , ip):
+        self.conn = pymysql.connect(host= ip, 
                             port=3306, 
                             user='root', 
                             passwd='GPBL2425', 
