@@ -35,7 +35,7 @@ class MotorPool(Process):
 
 class MotorFunc:
     def __init__(self):
-        self.motorpin = 12
+        self.motorpin = 25
         self.setup_gpio()
         self.thresholds = {
             "min_temp": 20,
