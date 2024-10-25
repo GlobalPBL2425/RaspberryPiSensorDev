@@ -3,47 +3,47 @@ import board
 import adafruit_dht
 import datetime
 import RPi.GPIO as GPIO
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Lock
 
-class MotorAndSensorControl(Process):
-    def __init__(self, sensor_queue: Queue, threshold_queue: Queue, motorPWM: Queue, daemon):
-        super().__init__(daemon=daemon)
-        self.sensorFunc = SensorReading()
-        self.motorFunc = MotorFunc()
-        self.sensor_queue = sensor_queue
-        self.threshold_queue = threshold_queue
-        self.motorPWM = motorPWM
+class GPIOManager:
+    """Manages GPIO access to avoid conflicts."""
+    _instance = None
 
-    def run(self):
-        while True:
-            # Read and queue sensor data if queue is empty
-            if self.sensor_queue.empty():
-                sensor_data = self.sensorFunc.read_sensor()
-                self.sensor_queue.put(sensor_data)
+    def __init__(self):
+        if GPIOManager._instance is not None:
+            raise Exception("Only one instance of GPIOManager is allowed!")
+        GPIOManager._instance = self
+        GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BOARD)
+        self.lock = Lock()  # Lock for synchronized access
 
-            # Get the latest sensor reading and thresholds, and update motor control
-            if not self.sensor_queue.empty():
-                sensor_reading = self.sensor_queue.get()
-                self.motorFunc.motorcontrol(sensor_reading)
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = GPIOManager()
+        return cls._instance
 
-            if not self.threshold_queue.empty():
-                self.motorFunc.thresholds = self.threshold_queue.get()
+    def setup_pin(self, pin, mode):
+        with self.lock:
+            GPIO.setup(pin, mode)
 
-            # Send the duty cycle to motorPWM queue
-            self.motorFunc.update_duty_cycle(self.motorPWM)
-
-            time.sleep(0.5)  # Small delay to avoid overloading the loop
+    def pwm_start(self, pin, frequency):
+        with self.lock:
+            pwm = GPIO.PWM(pin, frequency)
+            pwm.start(0)
+            return pwm
 
     def cleanup(self):
-        """Clean up GPIO settings on exit."""
-        self.motorFunc.cleanup()
-        GPIO.cleanup()
+        with self.lock:
+            GPIO.cleanup()
 
 
 class MotorFunc:
     def __init__(self):
+        self.gpio_manager = GPIOManager.get_instance()
         self.motorpin = 25
-        self.setup_gpio()
+        self.gpio_manager.setup_pin(self.motorpin, GPIO.OUT)
+        self.pi_pwm = self.gpio_manager.pwm_start(self.motorpin, 1000)
         self.thresholds = {
             "min_temp": 20,
             "max_temp": 35,
@@ -55,43 +55,26 @@ class MotorFunc:
         self.commandtype = "auto"
         self.dutycycle = 0
 
-    def setup_gpio(self):
-        GPIO.setwarnings(False)
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(self.motorpin, GPIO.OUT)
-        self.pi_pwm = GPIO.PWM(self.motorpin, 1000)  # PWM with frequency 1kHz
-        self.pi_pwm.start(0)
-
     def motorcontrol(self, sensor_reading):
-        # Motor control logic for temperature and humidity
         temp, humidity = sensor_reading
         if self.commandtype == "auto":
-            # Temperature control
-            if temp <= self.thresholds["min_temp"]:
-                self.set_duty_cycle(100)
-            elif temp >= self.thresholds["max_temp"]:
-                self.set_duty_cycle(0)
-            else:
-                duty = 100 - (temp - self.thresholds["min_temp"]) / (self.thresholds["max_temp"] - self.thresholds["min_temp"]) * 100
-                self.set_duty_cycle(duty)
+            duty = self.calculate_duty(temp, self.thresholds["min_temp"], self.thresholds["max_temp"])
+            self.set_duty_cycle(duty)
+            
+            duty = self.calculate_duty(humidity, self.thresholds["min_humidity"], self.thresholds["max_humidity"])
+            self.set_duty_cycle(duty)
 
-            # Humidity control
-            if humidity <= self.thresholds["min_humidity"]:
-                self.set_duty_cycle(100)
-            elif humidity >= self.thresholds["max_humidity"]:
-                self.set_duty_cycle(0)
-            else:
-                duty = 100 - (humidity - self.thresholds["min_humidity"]) / (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) * 100
-                self.set_duty_cycle(duty)
+    def calculate_duty(self, value, min_threshold, max_threshold):
+        if value <= min_threshold:
+            return 100
+        elif value >= max_threshold:
+            return 0
+        else:
+            return 100 - (value - min_threshold) / (max_threshold - min_threshold) * 100
 
     def set_duty_cycle(self, duty):
-        self.pi_pwm.ChangeDutyCycle(duty)
         self.dutycycle = duty
-
-    def update_duty_cycle(self, motorPWM: Queue):
-        while not motorPWM.empty():
-            motorPWM.get_nowait()  # Clear queue
-        motorPWM.put(self.dutycycle)
+        self.pi_pwm.ChangeDutyCycle(duty)
 
     def cleanup(self):
         self.pi_pwm.stop()
@@ -115,6 +98,37 @@ class SensorReading:
             return None, None
 
 
+class MotorAndSensorControl(Process):
+    def __init__(self, sensor_queue: Queue, threshold_queue: Queue, motorPWM: Queue, daemon):
+        super().__init__(daemon=daemon)
+        self.sensorFunc = SensorReading()
+        self.motorFunc = MotorFunc()
+        self.sensor_queue = sensor_queue
+        self.threshold_queue = threshold_queue
+        self.motorPWM = motorPWM
+
+    def run(self):
+        while True:
+            if self.sensor_queue.empty():
+                sensor_data = self.sensorFunc.read_sensor()
+                if sensor_data:
+                    self.sensor_queue.put(sensor_data)
+
+            if not self.sensor_queue.empty():
+                sensor_reading = self.sensor_queue.get()
+                self.motorFunc.motorcontrol(sensor_reading)
+
+            if not self.threshold_queue.empty():
+                self.motorFunc.thresholds = self.threshold_queue.get()
+
+            self.motorFunc.set_duty_cycle(self.motorFunc.dutycycle)
+            time.sleep(0.5)
+
+    def cleanup(self):
+        self.motorFunc.cleanup()
+        GPIOManager.get_instance().cleanup()
+
+
 # Example usage
 if __name__ == "__main__":
     sensor_queue = Queue()
@@ -126,7 +140,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            time.sleep(1)  # Keep main loop running
+            time.sleep(1)
     except KeyboardInterrupt:
         motor_sensor_process.cleanup()
         motor_sensor_process.terminate()
