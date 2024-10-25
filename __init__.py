@@ -58,6 +58,7 @@ if __name__ == "__main__":
         interval=3,                      # Interval for timestamp rounding in (seconds)
         motorPWM=motorPWM_queue,         # Queue for motor PWM control
         commandType=commandType_queue,   # Queue for control type (AUTO/TIMER)
+        ip="localhost",
         daemon=True      )
     
     mqtt_pool = MQTTFunc(
