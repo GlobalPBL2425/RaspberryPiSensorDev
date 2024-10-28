@@ -11,9 +11,17 @@ class MotorPool(Process):
         self.motorPWM = motorPWM
 
     def run(self):
+        GPIO.setwarnings(False)  # Disable warnings
+        #GPIO.setmode(GPIO.Board)  # Set pin numbering system
+        GPIO.setup(self.motorpin, GPIO.OUT)
+        pi_pwm = GPIO.PWM(self.motorpin, 1000)  # Create PWM instance with frequency
+        pi_pwm.start(0)  # Start PWM with 0 Duty Cycle
+
+        sensor_reading = None
         while True:
-            if not self.sensor_reading.empty():
-                sensor_reading = self.sensor_reading.get()
+
+            if not self.sensor_queue.empty():
+                sensor_reading = self.sensor_queue.get()
 
             # Updates the threshold when a new threshold is received via MQTT
             if not self.threshold_queue.empty():
@@ -21,6 +29,7 @@ class MotorPool(Process):
 
             if sensor_reading:  # Ensure sensor_reading is not None
                 self.motorfunc.motorcontrol(sensor_reading=sensor_reading)
+                pi_pwm.ChangeDutyCycle(self.motorfunc.dutycycle)
                 self.empty_queue()
                 self.motorPWM.put(self.motorfunc.dutycycle)
             time.sleep(0.5)  # Small delay to avoid overloading the loop
@@ -36,7 +45,6 @@ class MotorPool(Process):
 class MotorFunc:
     def __init__(self):
         self.motorpin = 25
-        self.setup_gpio()
         self.thresholds = {
             "min_temp": 20,
             "max_temp": 35,
@@ -49,13 +57,7 @@ class MotorFunc:
         self.change = False
         self.dutycycle = 0
 
-    def setup_gpio(self):
-        GPIO.setwarnings(False)  # Disable warnings
-        #GPIO.setmode(GPIO.Board)  # Set pin numbering system
-        GPIO.setup(self.motorpin, GPIO.OUT)
-        self.pi_pwm = GPIO.PWM(self.motorpin, 1000)  # Create PWM instance with frequency
-        self.pi_pwm.start(0)  # Start PWM with 0 Duty Cycle
-
+        
     def motorcontrol(self, sensor_reading):
         if self.commandtype == "auto":
             # Calculate duty cycles based on temperature
@@ -76,7 +78,6 @@ class MotorFunc:
 
             # Set PWM to the minimum of the two, as a conservative approach
             duty = min(temp_duty, humidity_duty)
-            self.pi_pwm.ChangeDutyCycle(duty)
             self.dutycycle = duty
 
         elif self.commandtype == "timer":
