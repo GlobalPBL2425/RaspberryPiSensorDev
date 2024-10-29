@@ -1,7 +1,7 @@
 import time
 import os
 from multiprocessing import Process, Queue
-from sensorClass import sensorPool
+from sensorClass import sensorReading
 from motorClass import MotorPool
 from MQTTClass import MQTTFunc
 from mysqlClass import ControllerPool
@@ -40,11 +40,14 @@ if __name__ == "__main__":
     threshold_queue = Queue()
 
     #initializing the pools
+    """
     sensor_pool = sensorPool(
         sensor_queue=sensor_queue,
         daemon=False
     )
-
+    """
+    sensorFunc = sensorReading()
+    
     motor_pool = MotorPool(
         sensor_queue=sensor_queue,
         threshold_queue=threshold_queue,
@@ -71,12 +74,18 @@ if __name__ == "__main__":
         mqtt_port= mqtt_port, 
         daemon= False
     )
-    sensor_pool.start()
+
+    #sensor_pool.start()
     controllerpool.start()
     motor_pool.start()
     mqtt_pool.start()
 
-
+    while True:
+            sensorFunc.flag = True
+            sensor = sensorFunc.readSensor()
+            
+            if sensor_queue.empty():
+                sensor_queue.put(sensor)
 
 #master and slave diff
 #timing for master()
