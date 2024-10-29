@@ -19,6 +19,10 @@ class ControllerPool(Process):
         self.interval = interval
         self.motorPWM = motorPWM
         self.ip = ip
+        self.pwm = 10
+        self.commandType = 'auto'
+        self.sensor = None
+
 
     def run(self):
         self.MYSQL = MySQL(sensor_ID=self.sensorId,arrayName=self.arrayName , ip= self.ip)
@@ -26,15 +30,15 @@ class ControllerPool(Process):
         try:
             while True:
                 if not self.motorPWM.empty():
-                    pwm = self.motorPWM.get()
+                    self.pwm = self.motorPWM.get()
                 if not self.commandType.empty():
-                    commandType = self.commandType.get()
+                    self.commandType = self.commandType.get()
                 if not self.sensor_queue.empty():
-                    sensor = self.sensor_queue.get()
+                    self.sensor = self.sensor_queue.get()
                 
-                if sensor and pwm and commandType is not None:
+                if self.sensor and self.pwm and self.commandType is not None:
                     timestamp = self.get_rounded_timestamp()
-                    self.MYSQL.upload(timestamp=timestamp,temperature=sensor[0],humidity=sensor[1],controlMode=commandType, motorDutyCycle=pwm)
+                    self.MYSQL.upload(timestamp=timestamp,temperature=self.sensor[0],humidity=self.sensor[1],controlMode=self.commandType, motorDutyCycle=self.pwm)
 
                 time.sleep(self.interval)  # Wait 3 seconds before getting the next timestamp
         finally:
