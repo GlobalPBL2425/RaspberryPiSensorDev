@@ -7,6 +7,13 @@ from MQTTClass import MQTTFunc
 from mysqlClass import ControllerPool
 import datetime
 
+def get_rounded_timestamp(interval):
+        now = datetime.datetime.now()
+        # Always round down the seconds to the nearest multiple of 3 (i.e., 0, 3, 6, 9, ...)
+        rounded_seconds = (now.second // interval) * interval
+        rounded_now = now.replace(second=rounded_seconds, microsecond=0)
+        return rounded_now
+
 
 """
 MQTT INFO 
@@ -28,7 +35,7 @@ arrayName = "SensorArray_1"
 sensorId = "Rpi_01"
 
 
-
+SensorName  = "Sensor_" 
 
 
             
@@ -47,7 +54,7 @@ if __name__ == "__main__":
     )
     """
     sensorFunc = sensorReading()
-    
+
     motor_pool = MotorPool(
         sensor_queue=sensor_queue,
         threshold_queue=threshold_queue,

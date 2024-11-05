@@ -31,19 +31,18 @@ class sensorReading:
         self.instance = [0,0]
         self.flag = False
 
-    def readSensor(self):
+    def readSensor(self , timestamp):
         #try to read the temperature
         while self.flag:
             try:
                 # Read temperature and humidity from the sensor
                 temperature = self.dht_device.temperature
                 humidity = self.dht_device.humidity
-                currtime = datetime.datetime.now()
-                formatted_time = currtime.strftime('%Y-%m-%d %H:%M:%S')
+               
 
                 # Store the values in self.instance
-                self.instance = [temperature, humidity]
-                print(f"Local Time: {formatted_time}, Temp: {temperature}, Humidity: {humidity}")
+                self.instance = [temperature, humidity , timestamp]
+                print(f"Local Time: {timestamp}, Temp: {temperature}, Humidity: {humidity}")
                 
                 self.flag = False
                 return self.instance
