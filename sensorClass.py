@@ -25,10 +25,11 @@ class sensorPool(Process):
                 break  #
 
 class sensorReading:
-    def __init__(self,sensorID):
-        self.dht_device = adafruit_dht.DHT22(sensorID)
-        self.instance = [0,0]
+    def __init__(self,sensorPIN,sensorID):
+        self.dht_device = adafruit_dht.DHT22(sensorPIN)
+        self.instance = [0,0,0,0]
         self.flag = False
+        self.sensorID = sensorID
 
     def readSensor(self , timestamp):
         #try to read the temperature
@@ -40,7 +41,7 @@ class sensorReading:
                
 
                 # Store the values in self.instance
-                self.instance = [temperature, humidity , timestamp]
+                self.instance = [temperature, humidity , timestamp, self.sensorID]
                 print(f"Local Time: {timestamp}, Temp: {temperature}, Humidity: {humidity}")
                 
                 self.flag = False

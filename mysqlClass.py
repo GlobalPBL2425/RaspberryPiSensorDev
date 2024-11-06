@@ -38,7 +38,7 @@ class ControllerPool(Process):
                 
                 if self.sensor and self.pwm and self.command is not None:
                     timestamp = self.get_rounded_timestamp()
-                    self.MYSQL.upload(timestamp=self.sensor[2],temperature=self.sensor[0],humidity=self.sensor[1],controlMode=self.commandType, motorDutyCycle=self.pwm)
+                    self.MYSQL.upload(sensor_ID=self.sensor[4],timestamp=self.sensor[2],temperature=self.sensor[0],humidity=self.sensor[1],controlMode=self.commandType, motorDutyCycle=self.pwm)
 
                 time.sleep(self.interval)  # Wait 3 seconds before getting the next timestamp
         finally:
@@ -54,6 +54,50 @@ class ControllerPool(Process):
         rounded_seconds = (now.second // self.interval) * self.interval
         rounded_now = now.replace(second=rounded_seconds, microsecond=0)
         return rounded_now
+    
+class Controller:
+    def __init__(self, arrayName, sensorId, interval, ip):
+        self.sensorId = sensorId
+        self.arrayName = arrayName
+        self.interval = interval
+        self.ip = ip
+        self.pwm = 10
+        self.command = 'auto'
+        self.sensor = None
+        self.MYSQL = MySQL(sensor_ID=self.sensorId, arrayName=self.arrayName, ip=self.ip)
+    def upload(self,sensor,commandType,motorPWM):
+        try:
+            while True:
+                if not motorPWM.empty():
+                    self.pwm = self.motorPWM.get()
+                if not commandType.empty():
+                    self.command = self.commandType.get()
+               
+                if self.sensor and self.pwm and self.command is not None:
+                    timestamp = self.get_rounded_timestamp()
+                    self.MYSQL.upload(sensor_ID=sensor[4],timestamp=sensor[2],temperature=sensor[0],humidity=sensor[1],controlMode=self.command, motorDutyCycle=self.pwm)
+                    break
+                time.sleep(self.interval)  # Wait 3 seconds before getting the next timestamp
+                
+        finally:
+            # Ensure the MySQL connection is closed when the process stops
+            self.MYSQL.stop()
+
+    def stop(self):
+        self.running = False
+    def get_rounded_timestamp(self):
+        now = datetime.datetime.now()
+        # Always round down the seconds to the nearest multiple of 3 (i.e., 0, 3, 6, 9, ...)
+        rounded_seconds = (now.second // self.interval) * self.interval
+        rounded_now = now.replace(second=rounded_seconds, microsecond=0)
+        return rounded_now
+
+
+
+
+
+
+
 
 class MySQL:
     def __init__(self, sensor_ID, arrayName , ip):
@@ -105,11 +149,11 @@ class MySQL:
             self.conn.rollback()  # Roll back the transaction in case of an error
         """
 
-    def upload(self, temperature, humidity, timestamp,controlMode ,motorDutyCycle):
+    def upload(self,sensor_ID , temperature, humidity, timestamp,controlMode ,motorDutyCycle):
         sqlcommand = f"INSERT INTO SensorReading (robotId, timestamp, temperature, humidity, controlMode ,motorDutyCycle) VALUES (%s, %s, %s, %s, %s, %s)"
         try:
             # Execute the SQL command with parameters to avoid SQL injection
-            self.cursor.execute(sqlcommand, (self.sensor_ID, timestamp, temperature, humidity, controlMode ,motorDutyCycle))
+            self.cursor.execute(sqlcommand, (sensor_ID, timestamp, temperature, humidity, controlMode ,motorDutyCycle))
             self.conn.commit()  # Commit the transaction
         except Exception as e:
             print(f"Error during data insertion: {e}")
