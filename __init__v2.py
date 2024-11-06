@@ -18,17 +18,16 @@ def get_rounded_timestamp(interval):
 # MQTT INFO
 mqtt_broker = "test.mosquitto.org"
 mqtt_port = 1883
-commandTopic = "GPBL2425/controlType"
+commandTopic = "GPBL2425/controlType"  ###(update this so that it is individual rpi)
 motorTopic = "GBPL2425/Motor/threshold"
 arrayName = "SensorArray_1"
 sensorId = "Rpi_"
 
-# Sensor Name Prefix
-SensorName  = "Sensor_"
+
 
 if __name__ == "__main__":
     interval = 3
-    num_instances = 3  # Number of instances to run
+    num_instances = 3
 
     # Create lists to hold queues and processes for each instance
     sensor_queues = []
@@ -59,31 +58,31 @@ if __name__ == "__main__":
 
         # Initialize motor, controller, and MQTT processes
         motor_pool = MotorPool(
-            sensor_queue=sensor_queue,
-            threshold_queue=threshold_queue,
+            sensor_queue=sensor_queues[i],
+            threshold_queue=threshold_queues[i],
             motorpin= 25,
-            motorPWM=motorPWM_queue,
+            motorPWM=motorPWM_queues[i],
             daemon=True
         )
 
         controllerpool = ControllerPool(
             sensorId=instance_id,
             arrayName=instance_array,
-            sensor_queue=sensor_queue,
+            sensor_queue=sensor_queues[i],
             interval=interval,
-            motorPWM=motorPWM_queue,
-            commandType=commandType_queue,
-            ip="localhost",
+            motorPWM=motorPWM_queues[i],
+            commandType=commandType_queues[i],
+            ip="192.168.11.4",
             daemon=True
         )
 
         mqtt_pool = MQTTFunc(
             commandTopic=commandTopic,
             motorTopic=motorTopic,
-            sensorqueue=sensor_queue,
+            sensorqueue=sensor_queues[i],
             mqtt_broker=mqtt_broker,
-            motorThres=threshold_queue,
-            commandType=commandType_queue,
+            motorThres=threshold_queues[i],
+            commandType=commandType_queues[i],
             mqtt_port=mqtt_port,
             daemon=False
         )
@@ -98,15 +97,15 @@ if __name__ == "__main__":
         motor_pool.start()
         mqtt_pool.start()
 
-        # Main loop for sensor reading and data handling
-        while True:
-            sensorFunc.flag = True
-            timestamp = get_rounded_timestamp(interval)
-            sensor = sensorFunc.readSensor(timestamp)
+    # Main loop for sensor reading and data handling
+    while True:
+        sensorFunc.flag = True
+        timestamp = get_rounded_timestamp(interval)
+        sensor = sensorFunc.readSensor(timestamp)
 
-            if sensor_queue.empty():
-                sensor_queue.put(sensor)
-            time.sleep(interval)  # Sleep based on the interval to avoid rapid looping
+        if sensor_queues[i].empty():
+            sensor_queues[i].put(sensor)
+        time.sleep(interval)  # Sleep based on the interval to avoid rapid looping
 
     # Wait for processes to complete (if needed)
     for process in processes:
