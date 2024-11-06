@@ -3,9 +3,9 @@ import RPi.GPIO as GPIO
 import time
 
 class MotorPool(Process):
-    def __init__(self, sensor_queue, threshold_queue, motorPWM : Queue, daemon):
+    def __init__(self, sensor_queue,motorpin ,threshold_queue, motorPWM : Queue, daemon):
         Process.__init__(self,daemon=daemon)
-        self.motorpin = 25
+        self.motorpin = motorpin
         self.sensor_queue = sensor_queue
         self.threshold_queue = threshold_queue
         self.motorfunc = MotorFunc()

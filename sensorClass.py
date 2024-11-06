@@ -24,10 +24,9 @@ class sensorPool(Process):
             except:
                 break  #
 
-
 class sensorReading:
-    def __init__(self):
-        self.dht_device = adafruit_dht.DHT22(board.D16)
+    def __init__(self,sensorID):
+        self.dht_device = adafruit_dht.DHT22(sensorID)
         self.instance = [0,0]
         self.flag = False
 

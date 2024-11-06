@@ -6,7 +6,7 @@ from motorClass import MotorPool
 from MQTTClass import MQTTFunc
 from mysqlClass import ControllerPool
 import datetime
-
+import board
 def get_rounded_timestamp(interval):
         now = datetime.datetime.now()
         # Always round down the seconds to the nearest multiple of 3 (i.e., 0, 3, 6, 9, ...)
@@ -40,6 +40,7 @@ SensorName  = "Sensor_"
 
             
 if __name__ == "__main__":
+    interval = 3
     #inititalizing tthe queues
     sensor_queue = Queue()
     motorPWM_queue = Queue()
@@ -53,10 +54,11 @@ if __name__ == "__main__":
         daemon=False
     )
     """
-    sensorFunc = sensorReading()
+    sensorFunc = sensorReading(sensorID=board.D16)
 
     motor_pool = MotorPool(
         sensor_queue=sensor_queue,
+        motorpin= 25,
         threshold_queue=threshold_queue,
         motorPWM=motorPWM_queue,
         daemon=True
@@ -89,10 +91,14 @@ if __name__ == "__main__":
 
     while True:
             sensorFunc.flag = True
+            timestamp = get_rounded_timestamp(interval)
             sensor = sensorFunc.readSensor()
-            
+           
+
             if sensor_queue.empty():
                 sensor_queue.put(sensor)
+
+
 
 #master and slave diff
 #timing for master()
