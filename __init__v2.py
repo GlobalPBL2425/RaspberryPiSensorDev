@@ -6,6 +6,7 @@ from motorClass import MotorPool
 from MQTTClass import MQTTFunc
 from mysqlClass import ControllerPool
 import datetime
+import board
 
 def get_rounded_timestamp(interval):
     now = datetime.datetime.now()
@@ -20,7 +21,7 @@ mqtt_port = 1883
 commandTopic = "GPBL2425/controlType"
 motorTopic = "GBPL2425/Motor/threshold"
 arrayName = "SensorArray_1"
-sensorId = "Rpi_01"
+sensorId = "Rpi_"
 
 # Sensor Name Prefix
 SensorName  = "Sensor_"
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     for i in range(num_instances):
         # Initialize unique identifiers for each instance
         instance_id = f"{sensorId}_{i + 1}"
-        #instance_array = f"{arrayName}_{i + 1}"
+        instance_array = f"arrayName"
 
         # Initialize queues for each instance
         sensor_queue = Queue()
@@ -54,12 +55,13 @@ if __name__ == "__main__":
         threshold_queues.append(threshold_queue)
 
         # Initialize sensor reading object
-        sensorFunc = sensorReading()
+        sensorFunc = sensorReading(sensorID=board.D16)
 
         # Initialize motor, controller, and MQTT processes
         motor_pool = MotorPool(
             sensor_queue=sensor_queue,
             threshold_queue=threshold_queue,
+            motorpin= 25,
             motorPWM=motorPWM_queue,
             daemon=True
         )
