@@ -92,7 +92,7 @@ if __name__ == "__main__":
     while True:
             sensorFunc.flag = True
             timestamp = get_rounded_timestamp(interval)
-            sensor = sensorFunc.readSensor()
+            sensor = sensorFunc.readSensor(timestamp)
            
 
             if sensor_queue.empty():
