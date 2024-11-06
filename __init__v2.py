@@ -23,7 +23,8 @@ motorTopic = "GBPL2425/Motor/threshold"
 arrayName = "SensorArray_1"
 sensorId = "Rpi_"
 
-
+sensorPins = [board.D16, board.D1]
+motorPins = [25,10]
 
 if __name__ == "__main__":
     interval = 3
@@ -54,13 +55,13 @@ if __name__ == "__main__":
         threshold_queues.append(threshold_queue)
 
         # Initialize sensor reading object
-        sensorFunc = sensorReading(sensorID=board.D16)
+        sensorFunc = sensorReading(sensorID=sensorPins[i])
 
         # Initialize motor, controller, and MQTT processes
         motor_pool = MotorPool(
             sensor_queue=sensor_queues[i],
             threshold_queue=threshold_queues[i],
-            motorpin= 25,
+            motorpin= motorPins[i],
             motorPWM=motorPWM_queues[i],
             daemon=True
         )
