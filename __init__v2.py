@@ -32,10 +32,9 @@ if __name__ == "__main__":
 
     # Create lists to hold queues and processes for each instance
     sensor_queues = []
-    motorPWM_queues = []
-    commandType_queues = []
-    threshold_queues = []
-    processes = []
+
+    # Create lists to hold functions and processes for each instance
+    sensorFuncs = []
 
     for i in range(num_instances):
         # Initialize unique identifiers for each instance
@@ -44,68 +43,25 @@ if __name__ == "__main__":
 
         # Initialize queues for each instance
         sensor_queue = Queue()
-        motorPWM_queue = Queue()
-        commandType_queue = Queue()
-        threshold_queue = Queue()
-
-        # Append queues to lists for later access if needed
+        
         sensor_queues.append(sensor_queue)
-        motorPWM_queues.append(motorPWM_queue)
-        commandType_queues.append(commandType_queue)
-        threshold_queues.append(threshold_queue)
 
-        # Initialize sensor reading object
+        # Initialize functions for each instance
         sensorFunc = sensorReading(sensorID=sensorPins[i])
 
-        # Initialize motor, controller, and MQTT processes
-        motor_pool = MotorPool(
-            sensor_queue=sensor_queues[i],
-            threshold_queue=threshold_queues[i],
-            motorpin= motorPins[i],
-            motorPWM=motorPWM_queues[i],
-            daemon=True
-        )
 
-        controllerpool = ControllerPool(
-            sensorId=instance_id,
-            arrayName=instance_array,
-            sensor_queue=sensor_queues[i],
-            interval=interval,
-            motorPWM=motorPWM_queues[i],
-            commandType=commandType_queues[i],
-            ip="192.168.11.4",
-            daemon=True
-        )
+        sensorFuncs.append(sensorFunc)
 
-        mqtt_pool = MQTTFunc(
-            commandTopic=commandTopic,
-            motorTopic=motorTopic,
-            sensorqueue=sensor_queues[i],
-            mqtt_broker=mqtt_broker,
-            motorThres=threshold_queues[i],
-            commandType=commandType_queues[i],
-            mqtt_port=mqtt_port,
-            daemon=False
-        )
-
-        # Append each process to the processes list and start them
-        processes.append(controllerpool)
-        processes.append(motor_pool)
-        processes.append(mqtt_pool)
-
-        # Start processes
-        controllerpool.start()
-        motor_pool.start()
-        mqtt_pool.start()
 
     # Main loop for sensor reading and data handling
     while True:
-        sensorFunc.flag = True
-        timestamp = get_rounded_timestamp(interval)
-        sensor = sensorFunc.readSensor(timestamp)
+        for i in range(num_instances):
+            sensorFuncs[i].flag = True
+            timestamp = get_rounded_timestamp(interval)
+            sensor = sensorFuncs[i].readSensor(timestamp)
 
-        if sensor_queues[i].empty():
-            sensor_queues[i].put(sensor)
+            if sensor_queues[i].empty():
+                sensor_queues[i].put(sensor)
         time.sleep(interval)  # Sleep based on the interval to avoid rapid looping
 
     # Wait for processes to complete (if needed)
