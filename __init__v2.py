@@ -32,7 +32,7 @@ if __name__ == "__main__":
     interval = 3
     num_instances = 2
 
-    # Create lists to hold queues and processes for each instance
+    # Create lists to hold queues for each instance
     sensor_queues = []
     motorPWM_queues = []
     commandType_queues = []
@@ -40,6 +40,7 @@ if __name__ == "__main__":
 
     # Create lists to hold functions and processes for each instance
     sensorFuncs = []
+    motorProcesses =[]
 
     # Initialize MYSQL functiom
     mySQLFunc = Controller(
@@ -67,10 +68,27 @@ if __name__ == "__main__":
 
         # Initialize functions for each instance
         sensorFunc = sensorReading(sensorPIN=sensorPins[i],sensorID=instance_id)
-
+        
+        motor_pool = MotorPool(
+            sensor_queue=sensor_queues[i],
+            motorpin= motorPins[i],
+            threshold_queue=threshold_queues[i],
+            motorPWM=motorPWM_queues[i],
+            daemon=True
+        )
+    
 
         sensorFuncs.append(sensorFunc)
 
+    mqtt_pool = MQTTFunc( 
+        mqtt_broker= mqtt_broker, 
+        mqtt_port= mqtt_port, 
+        num_instances=num_instances,
+        arrayname= arrayName,
+        motorThres= threshold_queues,
+        commandType= commandType_queues, 
+        daemon= False
+    )
 
     # Main loop for sensor reading and data handling
     while True:

@@ -7,6 +7,7 @@ from MQTTClass import MQTTFunc
 from mysqlClass import ControllerPool
 import datetime
 import board
+
 def get_rounded_timestamp(interval):
         now = datetime.datetime.now()
         # Always round down the seconds to the nearest multiple of 3 (i.e., 0, 3, 6, 9, ...)

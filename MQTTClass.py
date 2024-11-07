@@ -4,22 +4,22 @@ import json
 import time
 
 class MQTTFunc(Process):
-    def __init__(self, commandTopic, motorTopic, sensorqueue, mqtt_broker, motorThres : Queue,commandType: Queue, mqtt_port ,daemon):
+    def __init__(self,  mqtt_broker, mqtt_port, num_instances, arrayname, motorThres : list[Queue], commandTypes: list[Queue],daemon):
         Process.__init__(self, daemon=daemon)
-        self.motorTopic = motorTopic
-        self.commandTopic = commandTopic
-        self.commandType = commandType
+        self.motorThres = motorThres
+        self.commandTypes = commandTypes
         self.mqtt_broker = mqtt_broker
         self.mqtt_port = mqtt_port
         self.client = Client()
-        self.motorThres = motorThres
-        self.sensor_queue = sensorqueue
+        
+        self.num_instances = num_instances
+        self.arrayName = arrayname
     
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            # Subscribe to the command topic
-            client.subscribe(self.motorTopic)
-            client.subscribe(self.commandTopic)
+            for i in range (self.num_instances):
+                client.subscribe(f"GPBL2425/{self.arrayName}/Rpi_{i+ 1}/controlType")
+                client.subscribe(f"GBPL2425/{self.arrayName}/Rpi_{i + 1}/Motor/threshold")
             print("Connected to MQTT broker")
         else:
             print("Failed to connect to MQTT broker")
@@ -28,21 +28,25 @@ class MQTTFunc(Process):
     def on_message(self, client, userdata, message):
         msg = message.payload.decode("utf-8")
         
-        # Check which topic the message belongs to
-        if message.topic == self.motorCommand:
-            motor = json.loads(msg)
-            if self.motorThres.empty():
-                self.motorThres.put(motor)  # Add motor command to queue if empty
-            else:
-                self.motorThres.get()  # Replace existing value if the queue has data
-                self.motorThres.put(motor)
 
-        elif message.topic == self.commandTopic:
-            if self.commandType.empty():
-                self.commandType.put(msg)  # Add command type to queue if empty
-            else:
-                self.commandType.get()  # Replace existing value if the queue has data
-                self.commandType.put(msg)
+        for i in range (self.num_instances):
+            motorcommand = f"GBPL2425/{self.arrayName}/Rpi_{i + 1}/Motor/threshold"
+            commandtopic = f"GPBL2425/{self.arrayName}/Rpi_{i+ 1}/controlType"
+            # Check which topic the message belongs to
+            if message.topic == motorcommand:
+                motor = json.loads(msg)
+                # Empty the queue first
+                while not self.motorThres[i].empty():
+                    self.motorThres[i].get()
+                
+                # Add the new motor command to the empty queue
+                self.motorThres[i].put(motor)
+
+            elif message.topic == commandtopic:
+                while not self.commandTypes[i].empty():
+                    self.commandTypes[i].get()
+
+                self.commandTypes[i].put(msg)
 
     def run(self):
         # Set callbacks
