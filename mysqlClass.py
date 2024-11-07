@@ -63,25 +63,18 @@ class Controller:
         self.ip = ip
         self.pwm = 10
         self.command = 'auto'
-        self.sensor = None
         self.MYSQL = MySQL(sensor_ID=self.sensorId, arrayName=self.arrayName, ip=self.ip)
     def upload(self,sensor,commandType,motorPWM):
-        try:
-            while True:
-                if not motorPWM.empty():
-                    self.pwm = self.motorPWM.get()
-                if not commandType.empty():
-                    self.command = self.commandType.get()
+        if not motorPWM.empty():
+            self.pwm = self.motorPWM.get()
+        if not commandType.empty():
+            self.command = self.commandType.get()
                
-                if self.sensor and self.pwm and self.command is not None:
-                    timestamp = self.get_rounded_timestamp()
-                    self.MYSQL.upload(sensor_ID=sensor[4],timestamp=sensor[2],temperature=sensor[0],humidity=sensor[1],controlMode=self.command, motorDutyCycle=self.pwm)
-                    break
-                time.sleep(self.interval)  # Wait 3 seconds before getting the next timestamp
+        if sensor and self.pwm and self.command is not None:
+            timestamp = self.get_rounded_timestamp()
+            self.MYSQL.upload(sensor_ID=sensor[3],timestamp=sensor[2],temperature=sensor[0],humidity=sensor[1],controlMode=self.command, motorDutyCycle=self.pwm)
                 
-        finally:
-            # Ensure the MySQL connection is closed when the process stops
-            self.MYSQL.stop()
+            #time.sleep(self.interval)  # Wait 3 seconds before getting the next timestamp
 
     def stop(self):
         self.running = False
@@ -91,13 +84,6 @@ class Controller:
         rounded_seconds = (now.second // self.interval) * self.interval
         rounded_now = now.replace(second=rounded_seconds, microsecond=0)
         return rounded_now
-
-
-
-
-
-
-
 
 class MySQL:
     def __init__(self, sensor_ID, arrayName , ip):

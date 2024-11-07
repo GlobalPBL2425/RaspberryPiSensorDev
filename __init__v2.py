@@ -30,7 +30,7 @@ motorPins = [25,10]
 
 if __name__ == "__main__":
     interval = 3
-    num_instances = 3
+    num_instances = 2
 
     # Create lists to hold queues and processes for each instance
     sensor_queues = []
@@ -42,11 +42,11 @@ if __name__ == "__main__":
     sensorFuncs = []
 
     # Initialize MYSQL functiom
-    mySQLFunc = Controller(sensorId="Sensor_001",           # Simulated sensor ID
+    mySQLFunc = Controller(
+        sensorId="Sensor_001",           # Simulated sensor ID
         arrayName= "Group1",
         interval=3,                      # Interval for timestamp rounding in (seconds)
-        ip="localhost",
-        daemon=True      
+        ip="192.168.11.4"  
     )
 
     for i in range(num_instances):
@@ -61,12 +61,12 @@ if __name__ == "__main__":
         threshold_queue = Queue()
 
         sensor_queues.append(sensor_queue)
-        motorPWM_queues.append(motorPWM_queues)
-        commandType_queues.append(commandType_queues)
-        threshold_queues.append(threshold_queues)
+        motorPWM_queues.append(motorPWM_queue)
+        commandType_queues.append(commandType_queue)
+        threshold_queues.append(threshold_queue)
 
         # Initialize functions for each instance
-        sensorFunc = sensorReading(sensorID=sensorPins[i],sensor_ID=instance_id)
+        sensorFunc = sensorReading(sensorPIN=sensorPins[i],sensorID=instance_id)
 
 
         sensorFuncs.append(sensorFunc)
