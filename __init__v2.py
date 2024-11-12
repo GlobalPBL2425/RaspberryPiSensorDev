@@ -76,8 +76,9 @@ if __name__ == "__main__":
             motorPWM=motorPWM_queues[i],
             daemon=True
         )
-    
-
+        motor_pool.start
+        
+        motorProcesses.append(motor_pool)
         sensorFuncs.append(sensorFunc)
 
     mqtt_pool = MQTTFunc( 
