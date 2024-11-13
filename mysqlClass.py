@@ -99,6 +99,7 @@ class MySQL:
         self.sensor_ID = sensor_ID
         self.arrayName = arrayName
     def on_start(self):
+
         #One table(ID , Robot ID ,timestamp TIMESTAMP , humidity FLOAT NOT NULL, temperature FLOAT NOT NULL , (command type (auto/timer)){thersholds}, PWM of motor(%))
         readingTable = f"""CREATE TABLE IF NOT EXISTS SensorReading (
                     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
