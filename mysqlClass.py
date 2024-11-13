@@ -91,7 +91,7 @@ class MySQL:
                             port=3306, 
                             user='root', 
                             passwd='GPBL2425', 
-                            db='testdb', 
+                            db='GPBL2425', 
                             charset='utf8mb4',  
                             cursorclass=pymysql.cursors.DictCursor, 
                             autocommit=False) 
