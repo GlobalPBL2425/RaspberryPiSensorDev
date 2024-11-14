@@ -3,7 +3,7 @@ import RPi.GPIO as GPIO
 import time
 
 class MotorPool(Process):
-    def __init__(self, sensor_queue,motorpin ,threshold_queue, motorPWM : Queue, daemon):
+    def __init__(self, sensor_queue,motorpin ,threshold_queue: Queue, motorPWM : Queue, daemon):
         Process.__init__(self,daemon=daemon)
         self.motorpin = motorpin
         self.sensor_queue = sensor_queue
@@ -64,17 +64,17 @@ class MotorFunc:
             # Calculate duty cycles based on temperature
             if sensor_reading[0] <= self.thresholds["min_temp"]:
                 temp_duty = 100
-            elif self.thresholds["max_temp"] > sensor_reading[0] > self.thresholds["min_temp"]:
-                temp_duty = 100 - (sensor_reading[0] - self.thresholds["min_temp"]) / (self.thresholds["max_temp"] - self.thresholds["min_temp"]) * 100
-            else:
+            #elif self.thresholds["max_temp"] > sensor_reading[0] > self.thresholds["min_temp"]:
+                #temp_duty = 100 - (sensor_reading[0] - self.thresholds["min_temp"]) / (self.thresholds["max_temp"] - self.thresholds["min_temp"]) * 100
+            elif sensor_reading[1] >  self.thresholds["max_temp"]:
                 temp_duty = 0
 
             # Calculate duty cycles based on humidity
             if sensor_reading[1] <= self.thresholds["min_humidity"]:
                 humidity_duty = 100
-            elif self.thresholds["max_humidity"] > sensor_reading[1] > self.thresholds["min_humidity"]:
-                humidity_duty = 100 - (sensor_reading[1] - self.thresholds["min_humidity"]) / (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) * 100
-            else:
+            #elif self.thresholds["max_humidity"] > sensor_reading[1] > self.thresholds["min_humidity"]:
+                #humidity_duty = 100 - (sensor_reading[1] - self.thresholds["min_humidity"]) / (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) * 100
+            elif sensor_reading[1] >  self.thresholds["max_humidity"]:
                 humidity_duty = 0
 
             # Set PWM to the minimum of the two, as a conservative approach
