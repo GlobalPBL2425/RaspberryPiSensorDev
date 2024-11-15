@@ -18,8 +18,8 @@ class MQTTFunc(Process):
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             for i in range (self.num_instances):
-                client.subscribe(f"GPBL2425/{self.arrayName}/Rpi_{i+ 1}/controlType")
-                client.subscribe(f"GBPL2425/{self.arrayName}/Rpi_{i + 1}/Motor/threshold")
+                client.subscribe(f"GPBL2425/{self.arrayName}/Rpi__{i+ 1}/controlType")
+                client.subscribe(f"GBPL2425/{self.arrayName}/Rpi__{i + 1}/Motor/threshold")
             print("Connected to MQTT broker")
         else:
             print("Failed to connect to MQTT broker")
@@ -30,8 +30,8 @@ class MQTTFunc(Process):
         
 
         for i in range (self.num_instances):
-            motorcommand = f"GBPL2425/{self.arrayName}/Rpi_{i + 1}/Motor/threshold"
-            commandtopic = f"GPBL2425/{self.arrayName}/Rpi_{i+ 1}/controlType"
+            motorcommand = f"GBPL2425/{self.arrayName}/Rpi__{i + 1}/Motor/threshold"
+            commandtopic = f"GPBL2425/{self.arrayName}/Rpi__{i+ 1}/controlType"
             # Check which topic the message belongs to
             if message.topic == motorcommand:
                 motor = json.loads(msg)

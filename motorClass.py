@@ -28,7 +28,7 @@ class MotorPool(Process):
             if not self.threshold_queue.empty():
                 self.motorfunc.thresholds = self.threshold_queue.get()
 
-            if sensor_reading:  # Ensure sensor_reading is not None
+            if sensor_reading != None:  # Ensure sensor_reading is not None
                 self.motorfunc.motorcontrol(sensor_reading=sensor_reading)
                 pi_pwm.ChangeDutyCycle(self.motorfunc.dutycycle)
                 self.empty_queue()
@@ -62,21 +62,20 @@ class MotorFunc:
     def motorcontrol(self, sensor_reading):
         if self.commandtype == "auto":
             # Calculate duty cycles based on temperature
-            if  sensor_reading[0] & sensor_reading[1] != None:
-                if sensor_reading[0] <= self.thresholds["min_temp"]:
-                    temp_duty = 100
-                #elif self.thresholds["max_temp"] > sensor_reading[0] > self.thresholds["min_temp"]:
-                    #temp_duty = 100 - (sensor_reading[0] - self.thresholds["min_temp"]) / (self.thresholds["max_temp"] - self.thresholds["min_temp"]) * 100
-                elif sensor_reading[1] >  self.thresholds["max_temp"]:
-                    temp_duty = 0
+            if sensor_reading[0] <= self.thresholds["min_temp"]:
+                temp_duty = 100
+            #elif self.thresholds["max_temp"] > sensor_reading[0] > self.thresholds["min_temp"]:
+                #temp_duty = 100 - (sensor_reading[0] - self.thresholds["min_temp"]) / (self.thresholds["max_temp"] - self.thresholds["min_temp"]) * 100
+            elif sensor_reading[1] >  self.thresholds["max_temp"]:
+                temp_duty = 0
 
-                # Calculate duty cycles based on humidity
-                if sensor_reading[1] <= self.thresholds["min_humidity"]:
-                    humidity_duty = 100
-                #elif self.thresholds["max_humidity"] > sensor_reading[1] > self.thresholds["min_humidity"]:
-                    #humidity_duty = 100 - (sensor_reading[1] - self.thresholds["min_humidity"]) / (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) * 100
-                elif sensor_reading[1] >  self.thresholds["max_humidity"]:
-                    humidity_duty = 0
+            # Calculate duty cycles based on humidity
+            if sensor_reading[1] <= self.thresholds["min_humidity"]:
+                humidity_duty = 100
+            #elif self.thresholds["max_humidity"] > sensor_reading[1] > self.thresholds["min_humidity"]:
+                #humidity_duty = 100 - (sensor_reading[1] - self.thresholds["min_humidity"]) / (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) * 100
+            elif sensor_reading[1] >  self.thresholds["max_humidity"]:
+                humidity_duty = 0
 
             # Set PWM to the minimum of the two, as a conservative approach
             duty = min(temp_duty, humidity_duty)

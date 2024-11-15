@@ -66,9 +66,9 @@ class Controller:
         self.MYSQL = MySQL(sensor_ID=self.sensorId, arrayName=self.arrayName, ip=self.ip)
     def upload(self,sensor,commandType,motorPWM):
         if not motorPWM.empty():
-            self.pwm = self.motorPWM.get()
+            self.pwm =motorPWM.get()
         if not commandType.empty():
-            self.command = self.commandType.get()
+            self.command = commandType.get()
                
         if sensor and self.pwm and self.command is not None:
             timestamp = self.get_rounded_timestamp()

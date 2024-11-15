@@ -25,7 +25,7 @@ motorTopic = "GBPL2425/Motor/threshold"
 arrayName = "SensorArray_1"
 sensorId = "Rpi_"
 
-sensorPins = [board.D16, board.D1]
+sensorPins = [board.D16, board.D1,]
 motorPins = [25,10]
 
 if __name__ == "__main__":
@@ -90,6 +90,7 @@ if __name__ == "__main__":
         commandType= commandType_queues, 
         daemon= False
     )
+    mqtt_pool.start()
 
     # Main loop for sensor reading and data handling
     while True:
@@ -97,12 +98,12 @@ if __name__ == "__main__":
             sensorFuncs[i].flag = True
             timestamp = get_rounded_timestamp(interval)
             sensor = sensorFuncs[i].readSensor(timestamp)
-
-            mySQLFunc.upload(sensor,commandType_queues[i],motorPWM_queues[i])
-            
-
-            if sensor_queues[i].empty():
-                sensor_queues[i].put(sensor)
+            if sensor[0] is not None and sensor[1] is not None:
+                mySQLFunc.upload(sensor,commandType_queues[i],motorPWM_queues[i])
+                
+                
+                if sensor_queues[i].empty():
+                    sensor_queues[i].put(sensor)
         time.sleep(interval)  # Sleep based on the interval to avoid rapid looping
 
     # Wait for processes to complete (if needed)
