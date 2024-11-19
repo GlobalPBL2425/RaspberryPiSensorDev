@@ -71,7 +71,7 @@ class MotorFunc:
 
         if self.commandtype == "auto":
             if self.timing:
-                self.run_timer_with_interrupt(duration=self.duration,interval=self.interval)
+                self.run_timer_with_interrupt(duration=self.duration,time_interval=self.interval)
                 self.timing = False
             else:
                 if sensor_reading[0] <= self.thresholds["min_temp"]:
