@@ -30,7 +30,10 @@ class MotorPool(Process):
 
             if sensor_reading != None:  # Ensure sensor_reading is not None
                 self.motorfunc.motorcontrol(sensor_reading=sensor_reading)
-                GPIO.output(self.motorpin, self.motorfunc.motoroutput)
+                if self.motorfunc.motoroutput == 1:
+                    GPIO.output(self.motorpin, GPIO.HIGH)
+                else:
+                    GPIO.output(self.motorpin, GPIO.LOW)
                 self.empty_queue()
                 self.motorPWM.put(self.motorfunc.duration)
             time.sleep(0.5)  # Small delay to avoid overloading the loop
@@ -45,7 +48,7 @@ class MotorPool(Process):
 
 class MotorFunc:
     def __init__(self):
-        self.motoroutput = GPIO.LOW
+        self.motoroutput = 0
         self.thresholds = {
             "min_temp": 20,
             "max_temp": 35,
@@ -111,18 +114,18 @@ class MotorFunc:
         """Runs the PWM for a given `duration` with the ability to interrupt it."""
         self.interrupt_event.clear()  # Clear the event before starting
         print("Starting motor for the timer duration.")
-        self.motoroutput = GPIO.HIGH # Full power
+        self.motoroutput =1# Full power
 
         start_time = time.time()
         while time.time() - start_time < duration:
             if self.interrupt_event.is_set():
                 print("Timer interrupted!")
-                self.motoroutput = GPIO.LOW   # Stop the motor
+                self.motoroutput = 1   # Stop the motor
                 return  # Exit the timer
 
             time.sleep(0.1)  # Check every 0.1 seconds for an interrupt
 
-        self.motoroutput = GPIO.LOW 
+        self.motoroutput = 0
 
         start_time = time.time()
         while time.time() - start_time < time_interval:
