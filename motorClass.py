@@ -116,6 +116,9 @@ class MotorFunc:
         print("Starting motor for the timer duration.")
         self.motoroutput =1# Full power
 
+        print(f"Duration: {duration} seconds")
+        print(f"Time Interval: {time_interval} seconds")
+
         start_time = time.time()
         while time.time() - start_time < duration:
             if self.interrupt_event.is_set():
