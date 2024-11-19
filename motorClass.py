@@ -1,9 +1,11 @@
 from multiprocessing import Process, Queue
 import RPi.GPIO as GPIO
 import time
+import threading
+
 
 class MotorPool(Process):
-    def __init__(self, sensor_queue,motorpin ,threshold_queue: Queue, motorPWM : Queue, daemon):
+    def __init__(self, sensor_queue,motorpin ,threshold_queue, motorPWM : Queue, daemon):
         Process.__init__(self,daemon=daemon)
         self.motorpin = motorpin
         self.sensor_queue = sensor_queue
@@ -15,8 +17,6 @@ class MotorPool(Process):
         GPIO.setwarnings(False)  # Disable warnings
         #GPIO.setmode(GPIO.Board)  # Set pin numbering system
         GPIO.setup(self.motorpin, GPIO.OUT)
-        pi_pwm = GPIO.PWM(self.motorpin, 10)  # Create PWM instance with frequency
-        pi_pwm.start(0)  # Start PWM with 0 Duty Cycle
 
         sensor_reading = None
         while True:
@@ -30,9 +30,9 @@ class MotorPool(Process):
 
             if sensor_reading != None:  # Ensure sensor_reading is not None
                 self.motorfunc.motorcontrol(sensor_reading=sensor_reading)
-                pi_pwm.ChangeDutyCycle(self.motorfunc.dutycycle)
+                GPIO.output(self.motorpin, self.motorfunc.motoroutput)
                 self.empty_queue()
-                self.motorPWM.put(self.motorfunc.dutycycle)
+                self.motorPWM.put(self.motorfunc.duration)
             time.sleep(0.5)  # Small delay to avoid overloading the loop
 
     def empty_queue(self):  
@@ -45,7 +45,7 @@ class MotorPool(Process):
 
 class MotorFunc:
     def __init__(self):
-        self.motorpin = 25
+        self.motoroutput = GPIO.LOW
         self.thresholds = {
             "min_temp": 20,
             "max_temp": 35,
@@ -55,62 +55,82 @@ class MotorFunc:
             "duration": 0
         }
         self.commandtype = "auto"
-        self.change = False
-        self.dutycycle = 0
+        self.interval = 0
+        self.duration = 0
+        self.autotimer = False
+        self.timing = False
+        self.interrupt_event = threading.Event()
+        self.previous_command_type = "auto"
 
         
     def motorcontrol(self, sensor_reading):
+        if self.commandtype != self.previous_command_type:
+            print(f"Command type changed from {self.previous_command_type} to {self.commandtype}")
+            self.previous_command_type = self.commandtype
+            self.interrupt_timer()
+
         if self.commandtype == "auto":
-            # Calculate duty cycles based on temperature
-            if sensor_reading[0] <= self.thresholds["min_temp"]:
-                temp_duty = 100
-            #elif self.thresholds["max_temp"] > sensor_reading[0] > self.thresholds["min_temp"]:
-                #temp_duty = 100 - (sensor_reading[0] - self.thresholds["min_temp"]) / (self.thresholds["max_temp"] - self.thresholds["min_temp"]) * 100
-            elif sensor_reading[1] >  self.thresholds["max_temp"]:
-                temp_duty = 0
+            if self.timing:
+                self.run_timer_with_interrupt(duration=self.duration,interval=self.interval)
+                self.timing = False
+            else:
+                if sensor_reading[0] <= self.thresholds["min_temp"]:
+                    temp_duty= 120
+                    
+                elif self.thresholds["max_temp"] > sensor_reading[0] > self.thresholds["min_temp"]:
+                    temp_duty = 120 - (sensor_reading[0] - self.thresholds["min_temp"]) / \
+                                (self.thresholds["max_temp"] - self.thresholds["min_temp"]) * 100
+                
 
-            # Calculate duty cycles based on humidity
-            if sensor_reading[1] <= self.thresholds["min_humidity"]:
-                humidity_duty = 100
-            #elif self.thresholds["max_humidity"] > sensor_reading[1] > self.thresholds["min_humidity"]:
-                #humidity_duty = 100 - (sensor_reading[1] - self.thresholds["min_humidity"]) / (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) * 100
-            elif sensor_reading[1] >  self.thresholds["max_humidity"]:
-                humidity_duty = 0
+                # Calculate duty cycles based on humidity
+                if sensor_reading[1] <= self.thresholds["min_humidity"]:
+                    humidity_duty = 100
+                elif self.thresholds["max_humidity"] > sensor_reading[1] > self.thresholds["min_humidity"]:
+                    humidity_duty = 100 - (sensor_reading[1] - self.thresholds["min_humidity"]) / \
+                                    (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) * 100
+                
 
-            # Set PWM to the minimum of the two, as a conservative approach
-            duty = min(temp_duty, humidity_duty)
-            self.dutycycle = duty
+                self.timing = True
+                if sensor_reading[1] <= self.thresholds["min_humidity"] and sensor_reading[0]  <= self.thresholds["min_temp"]:
+                    self.duration = 0 
+                    self.interval = 0
+                else:
+                    self.duration = 1
+                    self.interval = (humidity_duty + temp_duty)/2
+                
 
         elif self.commandtype == "timer":
-            self.change = True
             print("Timer mode activated.")
             # Run the timer with a potential interrupt
             self.run_timer_with_interrupt(self.thresholds["duration"], self.thresholds["time_interval"])
 
-        if self.change:
-            self.interrupt_timer()
-            self.change = False
+
         time.sleep(0.5)  # Small delay to avoid overloading the loop
 
     def run_timer_with_interrupt(self, duration, time_interval):
         """Runs the PWM for a given `duration` with the ability to interrupt it."""
         self.interrupt_event.clear()  # Clear the event before starting
         print("Starting motor for the timer duration.")
-        self.pi_pwm.ChangeDutyCycle(100)  # Full power
+        self.motoroutput = GPIO.HIGH # Full power
 
         start_time = time.time()
         while time.time() - start_time < duration:
             if self.interrupt_event.is_set():
                 print("Timer interrupted!")
-                self.pi_pwm.ChangeDutyCycle(0)  # Stop the motor
+                self.motoroutput = GPIO.LOW   # Stop the motor
                 return  # Exit the timer
 
             time.sleep(0.1)  # Check every 0.1 seconds for an interrupt
 
-        # Motor stop after duration
-        self.pi_pwm.ChangeDutyCycle(0)
-        print("Stopping motor after duration.")
-        time.sleep(time_interval)
+        self.motoroutput = GPIO.LOW 
+
+        start_time = time.time()
+        while time.time() - start_time < time_interval:
+            if self.interrupt_event.is_set():
+                print("Timer interrupted during the wait interval!")
+                return 
+            time.sleep(0.1) 
+
 
     def interrupt_timer(self):
         """Method to trigger the timer interrupt."""
@@ -118,7 +138,6 @@ class MotorFunc:
 
     def cleanup(self):
         """Clean up the GPIO settings."""
-        self.pi_pwm.stop()
         GPIO.cleanup()
 
 
