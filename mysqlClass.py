@@ -4,8 +4,9 @@ from multiprocessing import Queue, Process
 from paho.mqtt.client import Client
 import json
 import datetime
+import threading
 
-
+"""unused code 
 class ControllerPool(Process):
     def __init__(self,arrayName, sensorId, sensor_queue, interval, motorPWM, commandType, ip,daemon):
         Process.__init__(self, daemon=daemon)
@@ -54,7 +55,7 @@ class ControllerPool(Process):
         rounded_seconds = (now.second // self.interval) * self.interval
         rounded_now = now.replace(second=rounded_seconds, microsecond=0)
         return rounded_now
-    
+ """   
 class Controller:
     def __init__(self, arrayName, sensorId, interval, ip):
         self.sensorId = sensorId
@@ -124,6 +125,16 @@ class MySQL:
                 ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
         
         self.cursor.execute(arrayTable)
+
+        #One table(ID , timestamp TIMESTAMP , motorstate/ BOOLEAN)
+        powerTable = f"""CREATE TABLE IF NOT EXISTS PowerUsage (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    robotId VARCHAR(128) NOT NULL,
+                    timestamp TIMESTAMP NOT NULL,
+                    motorstate/ BOOLEAN
+                    )
+                    ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
+        self.cursor.execute(powerTable)
 
         """
         Arraycommand = f"INSERT INTO ArrayTable (sensor_ID, array_Name) VALUES (%s, %s)"

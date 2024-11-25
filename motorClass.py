@@ -62,7 +62,7 @@ class MotorFunc:
         self.timing = False
         self.interrupt_event = threading.Event()
         self.previous_command_type = "auto"
-
+        self.motorpin = motorpin
         GPIO.setup(motorpin, GPIO.OUT)
 
         
