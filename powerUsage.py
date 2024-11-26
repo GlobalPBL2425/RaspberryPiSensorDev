@@ -16,17 +16,18 @@ class PowerController(Process):
     def on_start(self):
         for i in range (len(self.rpiNames)):
             self.motorstate.append(0)
+        self.sql.on_start()
     def run(self):
-        self.timestamp = datetime.datetime.now()
-        for i , rpi in enumerate(self.rpiNames):
-            if not self.powerQueueArray[i].empty():
-                self.motorstate[i] = self.powerQueueArray[i].get()
+        self.on_start()
+        while True:
+            self.timestamp = datetime.datetime.now()
+            for i , rpi in enumerate(self.rpiNames):
+                if not self.powerQueueArray[i].empty():
+                    self.motorstate[i] = self.powerQueueArray[i].get()
+                
+                self.sql.upload(rpi , self.timestamp, self.motorstate[i] )
             
-            self.sql.upload()
-
-
-        
-        time.sleep(1)
+            time.sleep(1)
 
 
     
