@@ -4,9 +4,11 @@ from multiprocessing import Process, Queue
 from sensorClass import sensorReading
 from motorClass import MotorPool
 from MQTTClass import MQTTFunc
-from mysqlClass import ControllerPool , MySQL , Controller
+from mysqlClass import  MySQL , Controller
+from powerUsage import PowerController
 import datetime
 import board
+
 
 def get_rounded_timestamp(interval):
     now = datetime.datetime.now()
@@ -25,18 +27,21 @@ motorTopic = "GBPL2425/Motor/threshold"
 arrayName = "SensorArray_1"
 sensorId = "Rpi_"
 
-sensorPins = [board.D16, board.D1,]
+sensorPins = [board.D16, board.D1]
 motorPins = [25,10]
 
 if __name__ == "__main__":
     interval = 3
     num_instances = 2
 
+    #create lists for motor ids
+    rpinames =[]
     # Create lists to hold queues for each instance
     sensor_queues = []
     motorPWM_queues = []
     commandType_queues = []
     threshold_queues = []
+    motorstate_queues = []
 
     # Create lists to hold functions and processes for each instance
     sensorFuncs = []
@@ -60,11 +65,13 @@ if __name__ == "__main__":
         motorPWM_queue = Queue()
         commandType_queue = Queue()
         threshold_queue = Queue()
+        motorstate_queue = Queue()
 
         sensor_queues.append(sensor_queue)
         motorPWM_queues.append(motorPWM_queue)
         commandType_queues.append(commandType_queue)
         threshold_queues.append(threshold_queue)
+        motorstate_queues.append(motorstate_queue)
 
         # Initialize functions for each instance
         sensorFunc = sensorReading(sensorPIN=sensorPins[i],sensorID=instance_id)
@@ -74,12 +81,21 @@ if __name__ == "__main__":
             motorpin= motorPins[i],
             threshold_queue=threshold_queues[i],
             motorPWM=motorPWM_queues[i],
+            motorstate= motorstate_queues[i],
             daemon=True
         )
         motor_pool.start()
 
         motorProcesses.append(motor_pool)
         sensorFuncs.append(sensorFunc)
+        rpinames.append(instance_id) 
+
+    power_pool = PowerController(
+         ip="192.168.11.4" ,
+         rpiNames=rpinames,
+         powerQueueArray=motorstate_queues,
+         daemon=True 
+    )
 
     mqtt_pool = MQTTFunc( 
         mqtt_broker= mqtt_broker, 

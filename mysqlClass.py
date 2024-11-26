@@ -189,7 +189,7 @@ cursor.close()
 conn.close()
 """
 
-
+'''
 # Simulate sensor data input and motor control commands
 if __name__ == "__main__":
     # Create queues for inter-process communication
@@ -236,3 +236,4 @@ if __name__ == "__main__":
     controller.join()
 
     print("ControllerPool test completed.")
+    '''

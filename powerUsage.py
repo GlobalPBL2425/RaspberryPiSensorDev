@@ -2,27 +2,38 @@ import pymysql
 from multiprocessing import Process, Queue
 from typing import List
 import datetime
+import time
 
-class powerController(Process):
-    def __init__(self,daemon , powerQueueArray: List[Queue]):
+class PowerController(Process):
+    def __init__(self, ip, rpiNames,powerQueueArray: List[Queue],daemon ):
         Process.__init__(self,daemon=daemon)
         self.powerQueueArray = powerQueueArray
-        self.rpinames = []
+        self.rpiNames = rpiNames
         self.motorstate = []
         self.timestamp = 0 
+        self.sql = PowerSQL(ip = ip)
 
     def on_start(self):
-        for i in range (self.powerQueueArray):
+        for i in range (len(self.rpiNames)):
             self.motorstate.append(0)
     def run(self):
+        self.timestamp = datetime.datetime.now()
+        for i , rpi in enumerate(self.rpiNames):
+            if not self.powerQueueArray[i].empty():
+                self.motorstate[i] = self.powerQueueArray[i].get()
+            
+            self.sql.upload()
+
+
         
+        time.sleep(1)
 
 
     
 
 
 class PowerSQL:
-    def __init__(self, sensor_ID, arrayName , ip):
+    def __init__(self, ip):
         self.conn = pymysql.connect(host= ip, 
                             port=3306, 
                             user='root', 
@@ -32,7 +43,6 @@ class PowerSQL:
                             cursorclass=pymysql.cursors.DictCursor, 
                             autocommit=False) 
         self.cursor = self.conn.cursor()
-        self.sensor_ID = sensor_ID
     def on_start(self):
         #One table(ID , timestamp TIMESTAMP , motorstate/ BOOLEAN)
         powerTable = f"""CREATE TABLE IF NOT EXISTS PowerUsage (
