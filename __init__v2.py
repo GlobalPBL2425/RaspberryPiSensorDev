@@ -52,7 +52,7 @@ if __name__ == "__main__":
         sensorId="Sensor_001",           # Simulated sensor ID
         arrayName= "Group1",
         interval=3,                      # Interval for timestamp rounding in (seconds)
-        ip="192.168.11.4"  
+        ip="192.168.11.3"  
     )
 
     for i in range(num_instances):
@@ -91,7 +91,7 @@ if __name__ == "__main__":
         rpinames.append(instance_id) 
 
     power_pool = PowerController(
-         ip="192.168.11.4" ,
+         ip="192.168.11.3" ,
          rpiNames=rpinames,
          powerQueueArray=motorstate_queues,
          daemon=True 
