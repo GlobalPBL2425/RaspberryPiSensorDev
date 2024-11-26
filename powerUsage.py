@@ -5,12 +5,12 @@ import datetime
 import time
 
 class PowerController(Process):
-    def __init__(self, ip, rpiNames,powerQueueArray: List[Queue],daemon ):
+    def __init__(self, ip, rpiNames, powerQueueArray : List[Queue],daemon ):
         Process.__init__(self,daemon=daemon)
         self.powerQueueArray = powerQueueArray
         self.rpiNames = rpiNames
         self.motorstate = []
-        self.timestamp = 0 
+        self.interval = 1 
         self.sql = PowerSQL(ip = ip)
 
     def on_start(self):
@@ -20,14 +20,24 @@ class PowerController(Process):
     def run(self):
         self.on_start()
         while True:
-            self.timestamp = datetime.datetime.now()
+            timestamp = self.get_rounded_timestamp()
             for i , rpi in enumerate(self.rpiNames):
                 if not self.powerQueueArray[i].empty():
                     self.motorstate[i] = self.powerQueueArray[i].get()
                 
-                self.sql.upload(rpi , self.timestamp, self.motorstate[i] )
+                self.sql.upload(rpi , timestamp, self.motorstate[i] )
             
             time.sleep(1)
+
+    def get_rounded_timestamp(self):
+        now = datetime.datetime.now()
+        # Round down the seconds to the nearest multiple of interval
+        rounded_seconds = (now.second // self.interval) *self.interval
+        rounded_now = now.replace(second=rounded_seconds, microsecond=0)
+        return rounded_now
+
+
+
 
 
     
@@ -50,7 +60,7 @@ class PowerSQL:
                     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     robotId VARCHAR(128) NOT NULL,
                     timestamp TIMESTAMP NOT NULL,
-                    motorstate BOOLEAN
+                    motorstate INT NOT NULL
                     )
                     ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
         self.cursor.execute(powerTable)
@@ -70,7 +80,7 @@ class PowerSQL:
         sqlcommand = f"INSERT INTO PowerUsage (robotId, timestamp, motorstate) VALUES (%s, %s, %s)"
         try:
             # Execute the SQL command with parameters to avoid SQL injection
-            self.cursor.execute(sqlcommand, (sensor_ID, timestamp, timestamp, motorstate))
+            self.cursor.execute(sqlcommand, (sensor_ID, timestamp, motorstate))
             self.conn.commit()  # Commit the transaction
         except Exception as e:
             print(f"Error during data insertion: {e}")
