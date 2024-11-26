@@ -27,12 +27,12 @@ motorTopic = "GBPL2425/Motor/threshold"
 arrayName = "SensorArray_1"
 sensorId = "Rpi_"
 
-sensorPins = [board.D16, board.D1]
-motorPins = [25,10]
+sensorPins = [board.D26, board.D19, board.13]
+motorPins = [25, 8 , 7]
 
 if __name__ == "__main__":
     interval = 3
-    num_instances = 2
+    num_instances = 3
 
     #create lists for motor ids
     rpinames =[]
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         num_instances=num_instances,
         arrayname= arrayName,
         motorThres= threshold_queues,
-        commandType= commandType_queues, 
+        commandTypes= commandType_queues, 
         daemon= False
     )
     mqtt_pool.start()
