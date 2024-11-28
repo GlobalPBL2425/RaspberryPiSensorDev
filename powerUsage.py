@@ -44,7 +44,7 @@ class PowerController(Process):
 
 
 class PowerSQL:
-    def __init__(self, ip):
+    def __init__(self, ip, arrayname):
         self.conn = pymysql.connect(host= ip, 
                             port=3306, 
                             user='root', 
@@ -54,11 +54,13 @@ class PowerSQL:
                             cursorclass=pymysql.cursors.DictCursor, 
                             autocommit=False) 
         self.cursor = self.conn.cursor()
+        self.arrayname = arrayname
     def on_start(self):
         #One table(ID , timestamp TIMESTAMP , motorstate/ BOOLEAN)
         powerTable = f"""CREATE TABLE IF NOT EXISTS PowerUsage (
                     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     robotId VARCHAR(128) NOT NULL,
+                    sensorId VARCHAR(128) NOT NULL,
                     timestamp TIMESTAMP NOT NULL,
                     motorstate INT NOT NULL
                     )
@@ -77,10 +79,10 @@ class PowerSQL:
         """
 
     def upload(self,sensor_ID , timestamp, motorstate):
-        sqlcommand = f"INSERT INTO PowerUsage (robotId, timestamp, motorstate) VALUES (%s, %s, %s)"
+        sqlcommand = f"INSERT INTO PowerUsage (robotId,sensor_Id, timestamp, motorstate) VALUES (%s, s%s, %s, %s)"
         try:
             # Execute the SQL command with parameters to avoid SQL injection
-            self.cursor.execute(sqlcommand, (sensor_ID, timestamp, motorstate))
+            self.cursor.execute(sqlcommand, (self.arrayname ,sensor_ID, timestamp, motorstate))
             self.conn.commit()  # Commit the transaction
         except Exception as e:
             print(f"Error during data insertion: {e}")

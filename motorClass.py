@@ -9,10 +9,8 @@ class MotorPool(Process):
         Process.__init__(self,daemon=daemon)
         self.motorpin = motorpin
         self.sensor_queue = sensor_queue
-        self.threshold_queue = threshold_queue
-        self.motorfunc = MotorFunc(motorpin, motorstate)
+        self.motorfunc = MotorFunc(motorpin, motorstate , threshold_queue)
         self.motorPWM = motorPWM
-        self.motorstate = motorstate
 
     def run(self):
         GPIO.setwarnings(False)  # Disable warnings
@@ -25,18 +23,13 @@ class MotorPool(Process):
             if not self.sensor_queue.empty():
                 sensor_reading = self.sensor_queue.get()
 
-            # Updates the threshold when a new threshold is received via MQTT
-            if not self.threshold_queue.empty():
-                self.motorfunc.thresholds = self.threshold_queue.get()
-
+            
             if sensor_reading != None:  # Ensure sensor_reading is not None
                 self.motorfunc.motorcontrol(sensor_reading=sensor_reading)
                 
                 self.empty_queue()
                 self.motorPWM.put(self.motorfunc.duration)
                 
-                
-                self.motorstate.put(self.motorfunc.motorstate)
             time.sleep(0.5)  # Small delay to avoid overloading the loop
 
     def empty_queue(self):  
@@ -48,7 +41,7 @@ class MotorPool(Process):
 
 
 class MotorFunc:
-    def __init__(self, motorpin, motorstate:Queue):
+    def __init__(self, motorpin, motorstate:Queue , threshold_queue: Queue):
         
         self.motoroutput = 0
         self.thresholds = {
@@ -57,7 +50,10 @@ class MotorFunc:
             "min_humidity": 0,
             "max_humidity": 100,
             "time_interval": 0,
-            "duration": 0
+            "duration": 0,
+            "Humidity_Var" : 120,
+            "Temperature_Var" : 120,
+            "autoDuration" : 1
         }
         self.commandtype = "auto"
         self.interval = 0
@@ -69,8 +65,14 @@ class MotorFunc:
         self.motorpin = motorpin
         GPIO.setup(motorpin, GPIO.OUT)
         self.motorstate = motorstate
-        
+        self.threshold_queue: Queue
+
     def motorcontrol(self, sensor_reading):
+        # Updates the threshold when a new threshold is received via MQTT
+        if not self.threshold_queue.empty():
+            self.thresholds = self.threshold_queue.get()
+
+
         if self.commandtype != self.previous_command_type:
             print(f"Command type changed from {self.previous_command_type} to {self.commandtype}")
             self.previous_command_type = self.commandtype
@@ -81,20 +83,22 @@ class MotorFunc:
                 self.run_timer_with_interrupt(duration=self.duration,time_interval=self.interval)
                 self.timing = False
             else:
+                temp_duty = 120
+                humidity_duty = 120
                 if sensor_reading[0] <= self.thresholds["min_temp"]:
                     temp_duty= 120
                     
                 elif self.thresholds["max_temp"] > sensor_reading[0] > self.thresholds["min_temp"]:
-                    temp_duty = 120 - (sensor_reading[0] - self.thresholds["min_temp"]) / \
-                                (self.thresholds["max_temp"] - self.thresholds["min_temp"]) * 100
+                    temp_duty = 120 (1 - (sensor_reading[0] - self.thresholds["min_temp"]) / \
+                                (self.thresholds["max_temp"] - self.thresholds["min_temp"]) )
                 
 
                 # Calculate duty cycles based on humidity
                 if sensor_reading[1] <= self.thresholds["min_humidity"]:
-                    humidity_duty = 100
+                    humidity_duty = 120
                 elif self.thresholds["max_humidity"] > sensor_reading[1] > self.thresholds["min_humidity"]:
-                    humidity_duty = 100 - (sensor_reading[1] - self.thresholds["min_humidity"]) / \
-                                    (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) * 100
+                    humidity_duty = 100 ( 1- (sensor_reading[1] - self.thresholds["min_humidity"]) / \
+                                    (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) )
                 
 
                 self.timing = True

@@ -73,7 +73,7 @@ class Controller:
                
         if sensor and self.pwm and self.command is not None:
             timestamp = self.get_rounded_timestamp()
-            self.MYSQL.upload(sensor_ID=sensor[3],timestamp=sensor[2],temperature=sensor[0],humidity=sensor[1],controlMode=self.command, motorDutyCycle=self.pwm)
+            self.MYSQL.upload(robotId=self.arrayName,sensor_ID=sensor[3],timestamp=sensor[2],temperature=sensor[0],humidity=sensor[1],controlMode=self.command, motorDutyCycle=self.pwm)
                 
             #time.sleep(self.interval)  # Wait 3 seconds before getting the next timestamp
 
@@ -105,6 +105,7 @@ class MySQL:
         readingTable = f"""CREATE TABLE IF NOT EXISTS SensorReading (
                     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     robotId VARCHAR(128) NOT NULL,
+                    sensorId VARCHAR(128) NOT NULL,
                     timestamp TIMESTAMP NOT NULL,
                     temperature FLOAT NOT NULL,
                     humidity FLOAT NOT NULL,
@@ -116,7 +117,8 @@ class MySQL:
         #another table (temperature conditions (cold , hot , normal),)
         arrayTable = f"""CREATE TABLE IF NOT EXISTS Thresholds (
                 id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                Name VARCHAR(128) NOT NULL,
+                robotId VARCHAR(128) NOT NULL,
+                sensorId VARCHAR(128) NOT NULL,
                 minTemp FLOAT NOT NULL,
                 maxTemp FLOAT NOT NULL,
                 minHum FLOAT NOT NULL,
@@ -130,6 +132,7 @@ class MySQL:
         powerTable = f"""CREATE TABLE IF NOT EXISTS PowerUsage (
                     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     robotId VARCHAR(128) NOT NULL,
+                    sensorId VARCHAR(128) NOT NULL,
                     timestamp TIMESTAMP NOT NULL,
                     motorstate/ BOOLEAN
                     )
@@ -147,11 +150,11 @@ class MySQL:
             self.conn.rollback()  # Roll back the transaction in case of an error
         """
 
-    def upload(self,sensor_ID , temperature, humidity, timestamp,controlMode ,motorDutyCycle):
-        sqlcommand = f"INSERT INTO SensorReading (robotId, timestamp, temperature, humidity, controlMode ,motorDutyCycle) VALUES (%s, %s, %s, %s, %s, %s)"
+    def upload(self, robotId,sensor_ID , temperature, humidity, timestamp,controlMode ,motorDutyCycle):
+        sqlcommand = f"INSERT INTO SensorReading (robotId,sensorId, timestamp, temperature, humidity, controlMode ,motorDutyCycle) VALUES (%s, %s, %s, %s, %s, %s, %s)"
         try:
             # Execute the SQL command with parameters to avoid SQL injection
-            self.cursor.execute(sqlcommand, (sensor_ID, timestamp, temperature, humidity, controlMode ,motorDutyCycle))
+            self.cursor.execute(sqlcommand, (robotId,sensor_ID, timestamp, temperature, humidity, controlMode ,motorDutyCycle))
             self.conn.commit()  # Commit the transaction
         except Exception as e:
             print(f"Error during data insertion: {e}")

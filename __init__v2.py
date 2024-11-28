@@ -24,8 +24,8 @@ mqtt_broker = "test.mosquitto.org"
 mqtt_port = 1883
 commandTopic = "GPBL2425/controlType"  ###(update this so that it is individual rpi)
 motorTopic = "GBPL2425/Motor/threshold"
-arrayName = "SensorArray_1"
-sensorId = "Rpi_"
+arrayName = "RPI_1"
+sensorId = "Sensor_"
 
 sensorPins = [board.D26, board.D19, board.D13]
 motorPins = [25, 8 , 7]
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # Initialize MYSQL functiom
     mySQLFunc = Controller(
         sensorId="Sensor_001",           # Simulated sensor ID
-        arrayName= "Group1",
+        arrayName= "Rpi__1",
         interval=3,                      # Interval for timestamp rounding in (seconds)
         ip="192.168.11.3"  
     )
