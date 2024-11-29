@@ -86,27 +86,27 @@ class MotorFunc:
                 temp_duty = 120
                 humidity_duty = 120
                 if sensor_reading[0] <= self.thresholds["min_temp"]:
-                    temp_duty= 120
+                    temp_duty= (self.thresholds["Temperature_Var"])
                     
                 elif self.thresholds["max_temp"] > sensor_reading[0] > self.thresholds["min_temp"]:
-                    temp_duty = 120 (1 - (sensor_reading[0] - self.thresholds["min_temp"]) / \
+                    temp_duty = (self.thresholds["Temperature_Var"]) (1 - (sensor_reading[0] - self.thresholds["min_temp"]) / \
                                 (self.thresholds["max_temp"] - self.thresholds["min_temp"]) )
                 
 
                 # Calculate duty cycles based on humidity
                 if sensor_reading[1] <= self.thresholds["min_humidity"]:
-                    humidity_duty = 120
+                    humidity_duty = (self.thresholds["Humidity_Var"])
                 elif self.thresholds["max_humidity"] > sensor_reading[1] > self.thresholds["min_humidity"]:
-                    humidity_duty = 100 ( 1- (sensor_reading[1] - self.thresholds["min_humidity"]) / \
+                    humidity_duty = (self.thresholds["Humidity_Var"])* ( 1- (sensor_reading[1] - self.thresholds["min_humidity"]) / \
                                     (self.thresholds["max_humidity"] - self.thresholds["min_humidity"]) )
                 
 
                 self.timing = True
-                if sensor_reading[1] <= self.thresholds["min_humidity"] and sensor_reading[0]  <= self.thresholds["min_temp"]:
+                if sensor_reading[1] >= self.thresholds["max_humidity"] and sensor_reading[0]  >= self.thresholds["max_temp"]:
                     self.duration = 0 
                     self.interval = 0
                 else:
-                    self.duration = 1
+                    self.duration = self.thresholds["autoDuration"]
                     self.interval = (humidity_duty + temp_duty)/2
                 
 
