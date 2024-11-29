@@ -99,6 +99,7 @@ class MySQL:
         self.cursor = self.conn.cursor()
         self.sensor_ID = sensor_ID
         self.arrayName = arrayName
+        self.on_start()
     def on_start(self):
 
         #One table(ID , Robot ID ,timestamp TIMESTAMP , humidity FLOAT NOT NULL, temperature FLOAT NOT NULL , (command type (auto/timer)){thersholds}, PWM of motor(%))
@@ -127,17 +128,6 @@ class MySQL:
                 ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
         
         self.cursor.execute(arrayTable)
-
-        #One table(ID , timestamp TIMESTAMP , motorstate/ BOOLEAN)
-        powerTable = f"""CREATE TABLE IF NOT EXISTS PowerUsage (
-                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    robotId VARCHAR(128) NOT NULL,
-                    sensorId VARCHAR(128) NOT NULL,
-                    timestamp TIMESTAMP NOT NULL,
-                    motorstate/ BOOLEAN
-                    )
-                    ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
-        self.cursor.execute(powerTable)
 
         """
         Arraycommand = f"INSERT INTO ArrayTable (sensor_ID, array_Name) VALUES (%s, %s)"
