@@ -79,7 +79,7 @@ class PowerSQL:
         """
 
     def upload(self,sensor_ID , timestamp, motorstate):
-        sqlcommand = f"INSERT INTO PowerUsage (robotId, sensor_Id, timestamp, motorstate) VALUES (%s, %s, %s, %s)"
+        sqlcommand = f"INSERT INTO PowerUsage (robotId, sensorId, timestamp, motorstate) VALUES (%s, %s, %s, %s)"
         try:
             # Execute the SQL command with parameters to avoid SQL injection
             self.cursor.execute(sqlcommand, (self.arrayname ,sensor_ID, timestamp, motorstate))
