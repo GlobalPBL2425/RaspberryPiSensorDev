@@ -93,6 +93,7 @@ if __name__ == "__main__":
         rpinames.append(instance_id) 
 
     power_pool = PowerController(
+        arrayname= arrayName,
          ip="192.168.11.3" ,
          rpiNames=rpinames,
          powerQueueArray=motorstate_queues,

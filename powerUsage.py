@@ -5,13 +5,13 @@ import datetime
 import time
 
 class PowerController(Process):
-    def __init__(self, ip, rpiNames, powerQueueArray : List[Queue],daemon ):
+    def __init__(self, arrayname , ip, rpiNames, powerQueueArray : List[Queue],daemon ):
         Process.__init__(self,daemon=daemon)
         self.powerQueueArray = powerQueueArray
         self.rpiNames = rpiNames
         self.motorstate = []
         self.interval = 1 
-        self.sql = PowerSQL(ip = ip)
+        self.sql = PowerSQL(ip = ip , arrayname=arrayname)
 
     def on_start(self):
         for i in range (len(self.rpiNames)):
