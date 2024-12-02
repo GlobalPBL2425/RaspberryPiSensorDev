@@ -24,7 +24,7 @@ mqtt_broker = "test.mosquitto.org"
 mqtt_port = 1883
 commandTopic = "GPBL2425/controlType"  ###(update this so that it is individual rpi)
 motorTopic = "GBPL2425/Motor/threshold"
-arrayName = "RPI_1"
+arrayName = "Rpi__1"
 sensorId = "Sensor_"
 
 sensorPins = [board.D26, board.D19, board.D13]
