@@ -107,6 +107,7 @@ if __name__ == "__main__":
         arrayname= arrayName,
         motorThres= threshold_queues,
         commandTypes= commandType_queues, 
+        topicNames = rpinames,
         daemon= False
     )
 

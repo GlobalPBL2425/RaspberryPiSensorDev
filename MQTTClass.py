@@ -4,22 +4,22 @@ import json
 import time
 
 class MQTTFunc(Process):
-    def __init__(self,  mqtt_broker, mqtt_port, num_instances, arrayname, motorThres : list[Queue], commandTypes: list[Queue],daemon):
+    def __init__(self,  mqtt_broker, mqtt_port, num_instances, arrayname, motorThres : list[Queue], commandTypes: list[Queue], topicNames ,daemon):
         Process.__init__(self, daemon=daemon)
         self.motorThres = motorThres
         self.commandTypes = commandTypes
         self.mqtt_broker = mqtt_broker
         self.mqtt_port = mqtt_port
         self.client = Client()
-        
+        self.topicNames = topicNames
         self.num_instances = num_instances
         self.arrayName = arrayname
     
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             for i in range (self.num_instances):
-                client.subscribe(f"GPBL2425/{self.arrayName}/Rpi__{i+ 1}/controlType")
-                client.subscribe(f"GBPL2425/{self.arrayName}/Rpi__{i + 1}/Motor/threshold")
+                client.subscribe(f"GPBL2425/{self.arrayName}/{self.topicNames[i]}/controlType")
+                client.subscribe(f"GBPL2425/{self.arrayName}/{self.topicNames[i]}/Motor/threshold")
             print("Connected to MQTT broker")
         else:
             print("Failed to connect to MQTT broker")
