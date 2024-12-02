@@ -65,12 +65,14 @@ class MotorFunc:
         self.motorpin = motorpin
         GPIO.setup(motorpin, GPIO.OUT)
         self.motorstate = motorstate
-        self.threshold_queue: Queue
+        self.threshold_queue = threshold_queue
 
     def motorcontrol(self, sensor_reading):
         # Updates the threshold when a new threshold is received via MQTT
         if not self.threshold_queue.empty():
-            self.thresholds = self.threshold_queue.get()
+            new_thresholds = self.threshold_queue.get()
+            if self.is_valid_thresholds(new_thresholds):
+                self.thresholds = new_thresholds
 
 
         if self.commandtype != self.previous_command_type:
@@ -89,7 +91,7 @@ class MotorFunc:
                     temp_duty= (self.thresholds["Temperature_Var"])
                     
                 elif self.thresholds["max_temp"] > sensor_reading[0] > self.thresholds["min_temp"]:
-                    temp_duty = (self.thresholds["Temperature_Var"]) (1 - (sensor_reading[0] - self.thresholds["min_temp"]) / \
+                    temp_duty = (self.thresholds["Temperature_Var"])*(1 - (sensor_reading[0] - self.thresholds["min_temp"]) / \
                                 (self.thresholds["max_temp"] - self.thresholds["min_temp"]) )
                 
 
@@ -155,6 +157,34 @@ class MotorFunc:
     def cleanup(self):
         """Clean up the GPIO settings."""
         GPIO.cleanup()
+        
+    @staticmethod
+    def is_valid_thresholds(data):
+        """
+        Validate that the data matches the expected JSON format for thresholds.
+        """
+        required_keys = {
+            "min_temp": int,
+            "max_temp": int,
+            "min_humidity": int,
+            "max_humidity": int,
+            "time_interval": int,
+            "duration": int,
+            "Humidity_Var": int,
+            "Temperature_Var": int,
+            "autoDuration": int,
+        }
+        
+        # Ensure the data is a dictionary and matches required keys and types
+        if not isinstance(data, dict):
+            return False
+        
+        for key, expected_type in required_keys.items():
+            if key not in data or not isinstance(data[key], expected_type):
+                return False
+        
+        return True
+
 
 
 # Test code for MotorPool process
