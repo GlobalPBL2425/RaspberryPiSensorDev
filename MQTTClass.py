@@ -2,13 +2,19 @@ from multiprocessing import Queue, Process
 from paho.mqtt.client import Client
 import json
 import time
+from dotenv import load_dotenv
+import os
 
 class MQTTFunc(Process):
-    def __init__(self,  mqtt_broker, mqtt_port, num_instances, arrayname, motorThres : list[Queue], commandTypes: list[Queue], topicNames ,daemon):
+    def __init__(self, num_instances, arrayname, motorThres : list[Queue], commandTypes: list[Queue], topicNames ,daemon):
         Process.__init__(self, daemon=daemon)
+        load_dotenv()
+        mqtt_host = os.getenv('DB_HOST')
+        mqtt_port = int(os.getenv('DB_PORT', 3306)) 
+
         self.motorThres = motorThres
         self.commandTypes = commandTypes
-        self.mqtt_broker = mqtt_broker
+        self.mqtt_broker = mqtt_host
         self.mqtt_port = mqtt_port
         self.client = Client()
         self.topicNames = topicNames
