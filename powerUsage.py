@@ -46,7 +46,7 @@ class PowerController(Process):
 
 
 class PowerSQL:
-    def __init__(self, ip, arrayname):
+    def __init__(self, arrayname):
         load_dotenv()
 
         # Retrieve database credentials from environment variables

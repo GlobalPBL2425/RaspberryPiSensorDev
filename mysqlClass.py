@@ -58,14 +58,14 @@ class ControllerPool(Process):
         return rounded_now
  """   
 class Controller:
-    def __init__(self, arrayName, sensorId, interval, ip):
+    def __init__(self, arrayName, sensorId, interval):
         self.sensorId = sensorId
         self.arrayName = arrayName
         self.interval = interval
         self.ip = ip
         self.pwm = 10
         self.command = 'auto'
-        self.MYSQL = MySQL(sensor_ID=self.sensorId, arrayName=self.arrayName, ip=self.ip)
+        self.MYSQL = MySQL(sensor_ID=self.sensorId, arrayName=self.arrayName)
     def upload(self,sensor,commandType,motorPWM):
         if not motorPWM.empty():
             self.pwm =motorPWM.get()
@@ -88,7 +88,7 @@ class Controller:
         return rounded_now
 
 class MySQL:
-    def __init__(self, sensor_ID, arrayName , ip):
+    def __init__(self, sensor_ID, arrayName):
         load_dotenv()
 
         # Retrieve database credentials from environment variables
@@ -98,7 +98,7 @@ class MySQL:
         db_password = os.getenv('DB_PASSWORD')
         db_name = os.getenv('DB_NAME')
         db_charset = os.getenv('DB_CHARSET', 'utf8mb4')  # Default to 'utf8mb4'
-        
+
         self.conn = pymysql.connect(host= db_host, 
                             port=db_port, 
                             user=db_user, 
