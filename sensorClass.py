@@ -38,7 +38,6 @@ class sensorReading:
                 # Read temperature and humidity from the sensor
                 temperature = self.dht_device.temperature
                 humidity = self.dht_device.humidity
-               
 
                 # Store the values in self.instance
                 self.instance = [temperature, humidity , timestamp, self.sensorID]

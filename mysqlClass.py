@@ -98,6 +98,7 @@ class MySQL:
         db_password = os.getenv('DB_PASSWORD')
         db_name = os.getenv('DB_NAME')
         db_charset = os.getenv('DB_CHARSET', 'utf8mb4')  # Default to 'utf8mb4'
+        
         self.conn = pymysql.connect(host= db_host, 
                             port=db_port, 
                             user=db_user, 
