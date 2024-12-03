@@ -5,7 +5,8 @@ from paho.mqtt.client import Client
 import json
 import datetime
 import threading
-
+from dotenv import load_dotenv
+import os
 """unused code 
 class ControllerPool(Process):
     def __init__(self,arrayName, sensorId, sensor_queue, interval, motorPWM, commandType, ip,daemon):
@@ -88,12 +89,21 @@ class Controller:
 
 class MySQL:
     def __init__(self, sensor_ID, arrayName , ip):
-        self.conn = pymysql.connect(host= ip, 
-                            port=3306, 
-                            user='root', 
-                            passwd='GPBL2425', 
-                            db='GPBL2425', 
-                            charset='utf8mb4',  
+        load_dotenv()
+
+        # Retrieve database credentials from environment variables
+        db_host = os.getenv('DB_HOST')
+        db_port = int(os.getenv('DB_PORT', 3306))  # Use default port 3306 if not specified
+        db_user = os.getenv('DB_USER')
+        db_password = os.getenv('DB_PASSWORD')
+        db_name = os.getenv('DB_NAME')
+        db_charset = os.getenv('DB_CHARSET', 'utf8mb4')  # Default to 'utf8mb4'
+        self.conn = pymysql.connect(host= db_host, 
+                            port=db_port, 
+                            user=db_user, 
+                            passwd=db_password, 
+                            db=db_name, 
+                            charset=db_charset,  
                             cursorclass=pymysql.cursors.DictCursor, 
                             autocommit=False) 
         self.cursor = self.conn.cursor()

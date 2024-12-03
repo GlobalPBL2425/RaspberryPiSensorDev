@@ -3,15 +3,17 @@ from multiprocessing import Process, Queue
 from typing import List
 import datetime
 import time
+from dotenv import load_dotenv
+import os
 
 class PowerController(Process):
-    def __init__(self, arrayname , ip, rpiNames, powerQueueArray : List[Queue],daemon ):
+    def __init__(self, arrayname , rpiNames, powerQueueArray : List[Queue],daemon ):
         Process.__init__(self,daemon=daemon)
         self.powerQueueArray = powerQueueArray
         self.rpiNames = rpiNames
         self.motorstate = []
         self.interval = 1 
-        self.sql = PowerSQL(ip = ip , arrayname=arrayname)
+        self.sql = PowerSQL( arrayname=arrayname)
 
     def on_start(self):
         for i in range (len(self.rpiNames)):
@@ -45,15 +47,26 @@ class PowerController(Process):
 
 class PowerSQL:
     def __init__(self, ip, arrayname):
-        self.conn = pymysql.connect(host= ip, 
-                            port=3306, 
-                            user='root', 
-                            passwd='GPBL2425', 
-                            db='GPBL2425', 
-                            charset='utf8mb4',  
+        load_dotenv()
+
+        # Retrieve database credentials from environment variables
+        db_host = os.getenv('DB_HOST')
+        db_port = int(os.getenv('DB_PORT', 3306))  # Use default port 3306 if not specified
+        db_user = os.getenv('DB_USER')
+        db_password = os.getenv('DB_PASSWORD')
+        db_name = os.getenv('DB_NAME')
+        db_charset = os.getenv('DB_CHARSET', 'utf8mb4')  # Default to 'utf8mb4'
+        
+        self.conn = pymysql.connect(host= db_host, 
+                            port=db_port, 
+                            user=db_user, 
+                            passwd=db_password, 
+                            db=db_name, 
+                            charset=db_charset,  
                             cursorclass=pymysql.cursors.DictCursor, 
                             autocommit=False) 
         self.cursor = self.conn.cursor()
+        
         self.arrayname = arrayname
     def on_start(self):
         #One table(ID , timestamp TIMESTAMP , motorstate/ BOOLEAN)
