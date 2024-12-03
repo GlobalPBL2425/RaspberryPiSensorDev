@@ -62,7 +62,6 @@ class Controller:
         self.sensorId = sensorId
         self.arrayName = arrayName
         self.interval = interval
-        self.ip = ip
         self.pwm = 10
         self.command = 'auto'
         self.MYSQL = MySQL(sensor_ID=self.sensorId, arrayName=self.arrayName)
