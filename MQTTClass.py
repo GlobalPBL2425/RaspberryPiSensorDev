@@ -9,8 +9,8 @@ class MQTTFunc(Process):
     def __init__(self, num_instances, arrayname, motorThres : list[Queue], commandTypes: list[Queue], topicNames ,daemon):
         Process.__init__(self, daemon=daemon)
         load_dotenv()
-        mqtt_host = os.getenv('DB_HOST')
-        mqtt_port = int(os.getenv('DB_PORT', 3306)) 
+        mqtt_host = os.getenv('MQTT_BROKER')
+        mqtt_port = int(os.getenv('MQTT_PORT', 1883)) 
 
         self.motorThres = motorThres
         self.commandTypes = commandTypes
@@ -24,8 +24,10 @@ class MQTTFunc(Process):
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             for i in range (self.num_instances):
-                client.subscribe(f"GPBL2425/{self.arrayName}/{self.topicNames[i]}/controlType")
-                client.subscribe(f"GBPL2425/{self.arrayName}/{self.topicNames[i]}/Motor/threshold")
+                motorcommand = f"GPBL2425/{self.arrayName}/{self.topicNames[i]}/Motor/threshold"
+                commandtopic = f"GPBL2425/{self.arrayName}/{self.topicNames[i]}controlType"
+                client.subscribe(motorcommand)
+                client.subscribe(commandtopic)
             print("Connected to MQTT broker")
         else:
             print("Failed to connect to MQTT broker")
@@ -33,11 +35,10 @@ class MQTTFunc(Process):
     # Define the callback for message reception
     def on_message(self, client, userdata, message):
         msg = message.payload.decode("utf-8")
-        
 
         for i in range (self.num_instances):
-            motorcommand = f"GBPL2425/{self.arrayName}/Rpi__{i + 1}/Motor/threshold"
-            commandtopic = f"GPBL2425/{self.arrayName}/Rpi__{i+ 1}/controlType"
+            motorcommand = f"GPBL2425/{self.arrayName}/{self.topicNames[i]}/Motor/threshold"
+            commandtopic = f"GPBL2425/{self.arrayName}/{self.topicNames[i]}controlType"
             # Check which topic the message belongs to
             if message.topic == motorcommand:
                 motor = json.loads(msg)
@@ -46,12 +47,13 @@ class MQTTFunc(Process):
                     self.motorThres[i].get()
                 
                 # Add the new motor command to the empty queue
+                print(motor)
                 self.motorThres[i].put(motor)
 
             elif message.topic == commandtopic:
                 while not self.commandTypes[i].empty():
                     self.commandTypes[i].get()
-
+                print(msg)
                 self.commandTypes[i].put(msg)
 
     def run(self):
@@ -62,8 +64,11 @@ class MQTTFunc(Process):
         # Connect to the MQTT broker and start the loop
         self.client.connect(self.mqtt_broker, self.mqtt_port, keepalive=60)
         print(f"Connecting to MQTT broker at {self.mqtt_broker}:{self.mqtt_port}")
+        
 
         # Start the MQTT client loop
         self.client.loop_forever()
+        while True:
+            time.sleep(0.1)
 
 
