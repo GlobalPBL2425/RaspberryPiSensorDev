@@ -140,7 +140,7 @@ class MySQL:
         """
 
     def upload(self, robotId,sensor_ID , temperature, humidity, timestamp,controlMode ,motorInterval):
-        sqlcommand = f"INSERT INTO SensorReading (robotId,sensorId, timestamp, temperature, humidity, controlMode ,motorDutmotorIntervalyCycle) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        sqlcommand = f"INSERT INTO SensorReading (robotId,sensorId, timestamp, temperature, humidity, controlMode ,motorInterval) VALUES (%s, %s, %s, %s, %s, %s, %s)"
         try:
             # Execute the SQL command with parameters to avoid SQL injection
             self.cursor.execute(sqlcommand, (robotId,sensor_ID, timestamp, temperature, humidity, controlMode ,motorInterval))
@@ -165,12 +165,12 @@ class thresholdSQL:
                             charset=db_charset,  
                             cursorclass=pymysql.cursors.DictCursor, 
                             autocommit=False) 
-        
+        self.cursor = self.conn.cursor()
         arrayTable = f"""CREATE TABLE IF NOT EXISTS Thresholds (
                 id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 robotId VARCHAR(128) NOT NULL,
                 sensorId VARCHAR(128) NOT NULL,
-                timestamp IMESTAMP NOT NULL,
+                timestamp TIMESTAMP NOT NULL,
                 min_temp FLOAT NOT NULL,
                 max_temp FLOAT NOT NULL,
                 min_humidity FLOAT NOT NULL,
