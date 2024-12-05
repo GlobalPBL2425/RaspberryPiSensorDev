@@ -8,7 +8,7 @@ from mysqlClass import  MySQL , Controller
 from powerUsage import PowerController
 import datetime
 import board
-
+from dotenv import load_dotenv
 
 def get_rounded_timestamp(interval):
     now = datetime.datetime.now()
@@ -49,6 +49,8 @@ if __name__ == "__main__":
         sensorId="Sensor_001",           # Simulated sensor ID
         arrayName= "Rpi__1",
         interval=3,                      # Interval for timestamp rounding in (seconds)
+        db_host= os.getenv('DB_HOST'),
+        db_port = int(os.getenv('DB_PORT', 3306))  
     )
 
     for i in range(num_instances):

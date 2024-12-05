@@ -58,13 +58,13 @@ class ControllerPool(Process):
         return rounded_now
  """   
 class Controller:
-    def __init__(self, arrayName, sensorId, interval):
+    def __init__(self, arrayName, sensorId, interval , db_host ,db_port):
         self.sensorId = sensorId
         self.arrayName = arrayName
         self.interval = interval
         self.pwm = 10
         self.command = 'auto'
-        self.MYSQL = MySQL(sensor_ID=self.sensorId, arrayName=self.arrayName)
+        self.MYSQL = MySQL(sensor_ID=self.sensorId, arrayName=self.arrayName , db_host= db_host ,db_port= db_port)
     def upload(self,sensor,commandType,motorPWM):
         if not motorPWM.empty():
             self.pwm =motorPWM.get()
@@ -73,7 +73,7 @@ class Controller:
                
         if sensor and self.pwm and self.command is not None:
             timestamp = self.get_rounded_timestamp()
-            self.MYSQL.upload(robotId=self.arrayName,sensor_ID=sensor[3],timestamp=sensor[2],temperature=sensor[0],humidity=sensor[1],controlMode=self.command, motorDutyCycle=self.pwm)
+            self.MYSQL.upload(robotId=self.arrayName,sensor_ID=sensor[3],timestamp=sensor[2],temperature=sensor[0],humidity=sensor[1],controlMode=self.command, motorInterval=self.pwm)
                 
             #time.sleep(self.interval)  # Wait 3 seconds before getting the next timestamp
 
@@ -87,9 +87,10 @@ class Controller:
         return rounded_now
 
 class MySQL:
-    def __init__(self, sensor_ID, arrayName):
+    def __init__(self, sensor_ID, arrayName , db_host ,db_port):
         load_dotenv()
 
+        
         # Retrieve database credentials from environment variables
         db_host = os.getenv('DB_HOST')
         db_port = int(os.getenv('DB_PORT', 3306))  # Use default port 3306 if not specified
@@ -121,7 +122,7 @@ class MySQL:
                     temperature FLOAT NOT NULL,
                     humidity FLOAT NOT NULL,
                     controlMode VARCHAR(128) NOT NULL,
-                    motorDutyCycle FLOAT 
+                    motorInterval FLOAT 
                     )
                     ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
         self.cursor.execute(readingTable)
@@ -150,11 +151,11 @@ class MySQL:
             self.conn.rollback()  # Roll back the transaction in case of an error
         """
 
-    def upload(self, robotId,sensor_ID , temperature, humidity, timestamp,controlMode ,motorDutyCycle):
-        sqlcommand = f"INSERT INTO SensorReading (robotId,sensorId, timestamp, temperature, humidity, controlMode ,motorDutyCycle) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    def upload(self, robotId,sensor_ID , temperature, humidity, timestamp,controlMode ,motorInterval):
+        sqlcommand = f"INSERT INTO SensorReading (robotId,sensorId, timestamp, temperature, humidity, controlMode ,motorDutmotorIntervalyCycle) VALUES (%s, %s, %s, %s, %s, %s, %s)"
         try:
             # Execute the SQL command with parameters to avoid SQL injection
-            self.cursor.execute(sqlcommand, (robotId,sensor_ID, timestamp, temperature, humidity, controlMode ,motorDutyCycle))
+            self.cursor.execute(sqlcommand, (robotId,sensor_ID, timestamp, temperature, humidity, controlMode ,motorInterval))
             self.conn.commit()  # Commit the transaction
         except Exception as e:
             print(f"Error during data insertion: {e}")

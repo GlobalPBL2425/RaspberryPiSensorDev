@@ -28,7 +28,7 @@ class MotorPool(Process):
                 self.motorfunc.motorcontrol(sensor_reading=sensor_reading)
                 
                 self.empty_queue()
-                self.motorPWM.put(self.motorfunc.duration)
+                self.motorPWM.put(self.motorfunc.interval)
                 
             time.sleep(0.5)  # Small delay to avoid overloading the loop
 
