@@ -127,19 +127,7 @@ class MySQL:
                     ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
         self.cursor.execute(readingTable)
         #another table (temperature conditions (cold , hot , normal),)
-        arrayTable = f"""CREATE TABLE IF NOT EXISTS Thresholds (
-                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                robotId VARCHAR(128) NOT NULL,
-                sensorId VARCHAR(128) NOT NULL,
-                minTemp FLOAT NOT NULL,
-                maxTemp FLOAT NOT NULL,
-                minHum FLOAT NOT NULL,
-                maxHum FLOAT NOT NULL
-                )
-                ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
         
-        self.cursor.execute(arrayTable)
-
         """
         Arraycommand = f"INSERT INTO ArrayTable (sensor_ID, array_Name) VALUES (%s, %s)"
         try:
@@ -164,6 +152,49 @@ class MySQL:
     def stop(self):
         self.cursor.close()
         self.conn.close()
+
+
+
+class thresholdSQL:
+    def __init__(self, db_host, db_port, db_user, db_password, db_name, db_charset):
+        self.conn = pymysql.connect(host= db_host, 
+                            port=db_port, 
+                            user=db_user, 
+                            passwd=db_password, 
+                            db=db_name, 
+                            charset=db_charset,  
+                            cursorclass=pymysql.cursors.DictCursor, 
+                            autocommit=False) 
+        
+        arrayTable = f"""CREATE TABLE IF NOT EXISTS Thresholds (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                robotId VARCHAR(128) NOT NULL,
+                sensorId VARCHAR(128) NOT NULL,
+                timestamp IMESTAMP NOT NULL,
+                min_temp FLOAT NOT NULL,
+                max_temp FLOAT NOT NULL,
+                min_humidity FLOAT NOT NULL,
+                max_humidity FLOAT NOT NULL,
+                time_interval FLOAT NOT NULL,
+                duration FLOAT NOT NULL,
+                Humidity_Var FLOAT NOT NULL,
+                Temperature_Var FLOAT NOT NULL,
+                autoDuration FLOAT NOT NULL
+                )
+                ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
+        self.cursor.execute(arrayTable)
+
+    def upload(self, robotId,sensorId,timestamp,min_temp,max_temp,min_humidity,max_humidity,time_interval,duration,Humidity_Var,Temperature_Var,autoDuration):
+        sqlcommand = f"INSERT INTO SensorReading (robotId,sensorId,timestamp,min_temp,max_temp,min_humidity,max_humidity,time_interval,duration,Humidity_Var,Temperature_Var,autoDuration):VALUES (%s,%s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s)"
+        try:
+            # Execute the SQL command with parameters to avoid SQL injection
+            self.cursor.execute(sqlcommand, (robotId,sensorId,timestamp,min_temp,max_temp,min_humidity,max_humidity,time_interval,duration,Humidity_Var,Temperature_Var,autoDuration))
+            self.conn.commit()  # Commit the transaction
+        except Exception as e:
+            print(f"Error during data insertion: {e}")
+            self.conn.rollback()  # Roll back the transaction in case of an error
+    
+
 
 
 """

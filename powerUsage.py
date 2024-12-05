@@ -7,13 +7,15 @@ from dotenv import load_dotenv
 import os
 
 class PowerController(Process):
-    def __init__(self, arrayname , rpiNames, powerQueueArray : List[Queue],daemon ):
+    def __init__(self, arrayname , rpiNames, powerQueueArray : List[Queue], awsstate ,daemon):
         Process.__init__(self,daemon=daemon)
         self.powerQueueArray = powerQueueArray
         self.rpiNames = rpiNames
         self.motorstate = []
         self.interval = 1 
-        self.sql = PowerSQL( arrayname=arrayname)
+        self.awsstate = awsstate
+        self.sql = PowerSQL( arrayname=arrayname, db_host=os.getenv('DB_HOST'),db_port=int(os.getenv('DB_PORT', 3306)) )
+        self.awsSQL = PowerSQL( arrayname=arrayname, db_host=os.getenv('AWS_HOST'),db_port=int(os.getenv('AWS_PORT', 3306)) )
 
     def on_start(self):
         for i in range (len(self.rpiNames)):
@@ -28,6 +30,8 @@ class PowerController(Process):
                     self.motorstate[i] = self.powerQueueArray[i].get()
                 
                 self.sql.upload(rpi , timestamp, self.motorstate[i] )
+                if self.awsstate:
+                    self.awsSQL.upload(rpi , timestamp, self.motorstate[i] )
             
             time.sleep(1)
 
@@ -46,12 +50,10 @@ class PowerController(Process):
 
 
 class PowerSQL:
-    def __init__(self, arrayname):
+    def __init__(self, arrayname ,db_host ,db_port):
         load_dotenv()
 
         # Retrieve database credentials from environment variables
-        db_host = os.getenv('DB_HOST')
-        db_port = int(os.getenv('DB_PORT', 3306))  # Use default port 3306 if not specified
         db_user = os.getenv('DB_USER')
         db_password = os.getenv('DB_PASSWORD')
         db_name = os.getenv('DB_NAME')

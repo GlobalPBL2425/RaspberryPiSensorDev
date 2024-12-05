@@ -30,6 +30,10 @@ motorPins = [25, 8 , 7]
 if __name__ == "__main__":
     interval = 3
     num_instances = 3
+    awsState= False
+    awsBool = os.getenv('AWSBOOL')
+    if str(awsBool).lower() == 'true':
+        awsState = True
 
     #create lists for motor ids
     rpinames =[]
@@ -51,6 +55,14 @@ if __name__ == "__main__":
         interval=3,                      # Interval for timestamp rounding in (seconds)
         db_host= os.getenv('DB_HOST'),
         db_port = int(os.getenv('DB_PORT', 3306))  
+    )
+    
+    awsFunc = Controller(
+        sensorId="Sensor_001",           # Simulated sensor ID
+        arrayName= "Rpi__1",
+        interval=3,                      # Interval for timestamp rounding in (seconds)
+        db_host= os.getenv('AWS_HOST'),
+        db_port = int(os.getenv('AWS_PORT', 3306))  
     )
 
     for i in range(num_instances):
@@ -94,6 +106,7 @@ if __name__ == "__main__":
         arrayname= arrayName,
          rpiNames=rpinames,
          powerQueueArray=motorstate_queues,
+         awsstate= awsState,
          daemon=True 
     )
 
@@ -117,7 +130,8 @@ if __name__ == "__main__":
             sensor = sensorFuncs[i].readSensor(timestamp)
             if sensor[0] is not None and sensor[1] is not None:
                 mySQLFunc.upload(sensor,commandType_queues[i],motorPWM_queues[i])
-                
+                if awsState:
+                    awsFunc.upload(sensor,commandType_queues[i],motorPWM_queues[i])
                 
                 if sensor_queues[i].empty():
                     sensor_queues[i].put(sensor)
