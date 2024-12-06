@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     # Initialize MYSQL functiom
     mySQLFunc = Controller(
-        sensorId="Sensor_001",           # Simulated sensor ID
+        sensorId="Sensor__1",           # Simulated sensor ID
         arrayName= "Rpi__1",
         interval=3,                      # Interval for timestamp rounding in (seconds)
         db_host= os.getenv('DB_HOST'),
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     )
     
     awsFunc = Controller(
-        sensorId="Sensor_001",           # Simulated sensor ID
+        sensorId="Sensor__1",           # Simulated sensor ID
         arrayName= "Rpi__1",
         interval=3,                      # Interval for timestamp rounding in (seconds)
         db_host= os.getenv('AWS_HOST'),

@@ -1,0 +1,58 @@
+[
+    {
+        "sensorName": "Sensor__1",
+        "thresholds": {
+            "min_temp": 20,
+            "max_temp": 35,
+            "min_humidity": 0,
+            "max_humidity": 100,
+            "time_interval": 3570,
+            "duration": 30,
+            "Humidity_Var": 120,
+            "Temperature_Var": 120,
+            "autoDuration": 1
+        }
+    },
+    {
+        "sensorName": "Sensor__2",
+        "thresholds": {
+            "min_temp": 20,
+            "max_temp": 35,
+            "min_humidity": 0,
+            "max_humidity": 100,
+            "time_interval": 43170,
+            "duration": 30,
+            "Humidity_Var": 120,
+            "Temperature_Var": 120,
+            "autoDuration": 1
+        }
+    },
+    {
+        "sensorName": "Sensor__3",
+        "thresholds": {
+            "min_temp": 20,
+            "max_temp": 35,
+            "min_humidity": 0,
+            "max_humidity": 100,
+            "time_interval": 43170,
+            "duration": 30,
+            "Humidity_Var": 120,
+            "Temperature_Var": 120,
+            "autoDuration": 1
+        }
+    },
+    {
+        "sensorName": "Sensor__4",
+        "thresholds": {
+            "min_temp": 20,
+            "max_temp": 35,
+            "min_humidity": 0,
+            "max_humidity": 100,
+            "time_interval": 43170,
+            "duration": 30,
+            "Humidity_Var": 120,
+            "Temperature_Var": 120,
+            "autoDuration": 1
+        }
+    }
+]

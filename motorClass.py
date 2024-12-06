@@ -55,13 +55,13 @@ class MotorFunc:
             "Temperature_Var" : 120,
             "autoDuration" : 1
         }
-        self.commandtype = "auto"
+        self.commandtype = "timer"
         self.interval = 0
         self.duration = 0
         self.autotimer = False
         self.timing = False
         self.interrupt_event = threading.Event()
-        self.previous_command_type = "auto"
+        self.previous_command_type = "timer"
         self.motorpin = motorpin
         GPIO.setup(motorpin, GPIO.OUT)
         self.motorstate = motorstate
