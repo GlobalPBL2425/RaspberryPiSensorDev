@@ -9,6 +9,7 @@ from powerUsage import PowerController
 import datetime
 import board
 from dotenv import load_dotenv
+import json
 
 def get_rounded_timestamp(interval):
     now = datetime.datetime.now()
@@ -17,6 +18,17 @@ def get_rounded_timestamp(interval):
     rounded_now = now.replace(second=rounded_seconds, microsecond=0)
     return rounded_now
 
+# Load JSON from file
+def load_json(json_file):
+    try:
+        with open(json_file, 'r') as file:
+            data = json.load(file)
+            return data
+    except FileNotFoundError:
+        print(f"Error: File {json_file} not found.")
+    except json.JSONDecodeError:
+        print(f"Error: Failed to decode JSON from {json_file}.")
+    return None
 
 
 # MQTT INFO
@@ -34,6 +46,8 @@ if __name__ == "__main__":
     awsBool = os.getenv('AWSBOOL')
     if str(awsBool).lower() == 'true':
         awsState = True
+
+    
 
     #create lists for motor ids
     rpinames =[]
@@ -65,7 +79,13 @@ if __name__ == "__main__":
         db_port = int(os.getenv('AWS_PORT', 3306))  
     )
 
+
+    json_file = "sensors.json"
+    # Load and process the JSON
+    sensors = load_json(json_file)
+
     for i in range(num_instances):
+        
         # Initialize unique identifiers for each instance
         instance_id = f"{sensorId}_{i + 1}"
         instance_array = f"arrayName"
@@ -97,10 +117,14 @@ if __name__ == "__main__":
 
         
         motor_pool.start()
-
         motorProcesses.append(motor_pool)
         sensorFuncs.append(sensorFunc)
         rpinames.append(instance_id) 
+
+        if sensors and len(sensors) > i:
+            threshold_queues[i].put(sensors[i])
+        else:
+            print(f"Error: No data for sensor {i} in JSON.")
 
     power_pool = PowerController(
         arrayname= arrayName,
@@ -121,6 +145,8 @@ if __name__ == "__main__":
 
     power_pool.start()
     mqtt_pool.start()
+
+    
 
     # Main loop for sensor reading and data handling
     while True:
