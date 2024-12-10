@@ -112,6 +112,7 @@ if __name__ == "__main__":
             threshold_queue=threshold_queues[i],
             motorPWM=motorPWM_queues[i],
             motorstate= motorstate_queues[i],
+            thresholds= sensors[i],
             daemon=True
         )
 
@@ -120,11 +121,6 @@ if __name__ == "__main__":
         motorProcesses.append(motor_pool)
         sensorFuncs.append(sensorFunc)
         rpinames.append(instance_id) 
-
-        if sensors and len(sensors) > i:
-            threshold_queues[i].put(sensors[i])
-        else:
-            print(f"Error: No data for sensor {i} in JSON.")
 
     power_pool = PowerController(
         arrayname= arrayName,

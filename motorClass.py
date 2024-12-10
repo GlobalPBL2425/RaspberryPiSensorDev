@@ -5,11 +5,11 @@ import threading
 
 
 class MotorPool(Process):
-    def __init__(self, sensor_queue,motorpin ,threshold_queue, motorPWM : Queue, motorstate: Queue, daemon):
+    def __init__(self, sensor_queue,motorpin ,threshold_queue, motorPWM : Queue, motorstate: Queue,thresholds, daemon):
         Process.__init__(self,daemon=daemon)
         self.motorpin = motorpin
         self.sensor_queue = sensor_queue
-        self.motorfunc = MotorFunc(motorpin, motorstate , threshold_queue)
+        self.motorfunc = MotorFunc(motorpin, motorstate , threshold_queue ,thresholds)
         self.motorPWM = motorPWM
 
     def run(self):
@@ -41,20 +41,10 @@ class MotorPool(Process):
 
 
 class MotorFunc:
-    def __init__(self, motorpin, motorstate:Queue , threshold_queue: Queue):
+    def __init__(self, motorpin, motorstate:Queue , threshold_queue: Queue , thresholds):
         
         self.motoroutput = 0
-        self.thresholds = {
-            "min_temp": 20,
-            "max_temp": 35,
-            "min_humidity": 0,
-            "max_humidity": 100,
-            "time_interval": 0,
-            "duration": 0,
-            "Humidity_Var" : 120,
-            "Temperature_Var" : 120,
-            "autoDuration" : 1
-        }
+        self.thresholds = thresholds
         self.commandtype = "timer"
         self.interval = 0
         self.duration = 0
@@ -115,6 +105,7 @@ class MotorFunc:
         elif self.commandtype == "timer":
             print("Timer mode activated.")
             # Run the timer with a potential interrupt
+            print(f"Duration: {self.thresholds['duration']}, Time Interval: {self.thresholds['time_interval']}")
             self.run_timer_with_interrupt(self.thresholds["duration"], self.thresholds["time_interval"])
 
 
