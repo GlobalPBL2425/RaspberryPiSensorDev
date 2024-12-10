@@ -80,7 +80,7 @@ if __name__ == "__main__":
     )
 
 
-    json_file = "sensors.json"
+    json_file = "default.json"
     # Load and process the JSON
     sensors = load_json(json_file)
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
             threshold_queue=threshold_queues[i],
             motorPWM=motorPWM_queues[i],
             motorstate= motorstate_queues[i],
-            thresholds= sensors[i],
+            thresholds= sensors[i]['thresholds'],
             daemon=True
         )
 
