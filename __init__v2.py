@@ -11,11 +11,11 @@ import board
 from dotenv import load_dotenv
 import json
 
-def get_rounded_timestamp(interval):
+def get_rounded_timestamp(interval_minutes):
     now = datetime.datetime.now()
-    # Round down the seconds to the nearest multiple of interval
-    rounded_seconds = (now.second // interval) * interval
-    rounded_now = now.replace(second=rounded_seconds, microsecond=0)
+    # Round down the minutes to the nearest multiple of interval_minutes
+    rounded_minutes = (now.minute // interval_minutes) * interval_minutes
+    rounded_now = now.replace(minute=rounded_minutes, second=0, microsecond=0)
     return rounded_now
 
 # Load JSON from file
@@ -40,7 +40,7 @@ sensorPins = [board.D26, board.D19, board.D13]
 motorPins = [25, 8 , 7]
 
 if __name__ == "__main__":
-    interval = 3
+    interval = 5
     num_instances = 3
     awsState= False
     awsBool = os.getenv('AWSBOOL')
@@ -157,6 +157,7 @@ if __name__ == "__main__":
                 
                 if sensor_queues[i].empty():
                     sensor_queues[i].put(sensor)
+        minInterval=interval*60
         time.sleep(interval)  # Sleep based on the interval to avoid rapid looping
 
     # Wait for processes to complete (if needed)

@@ -107,7 +107,7 @@ class MotorFunc:
             # Run the timer with a potential interrupt
             print(f"Duration: {self.thresholds['duration']}, Time Interval: {self.thresholds['time_interval']}")
             self.run_timer_with_interrupt(self.thresholds["duration"], self.thresholds["time_interval"])
-
+            self.interval = self.thresholds['time_interval']
 
         time.sleep(0.5)  # Small delay to avoid overloading the loop
 

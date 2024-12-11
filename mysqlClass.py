@@ -63,7 +63,7 @@ class Controller:
         self.arrayName = arrayName
         self.interval = interval
         self.pwm = 10
-        self.command = 'auto'
+        self.command = 'timer'
         self.MYSQL = MySQL(sensor_ID=self.sensorId, arrayName=self.arrayName , db_host= db_host ,db_port= db_port)
     def upload(self,sensor,commandType,motorPWM):
         if not motorPWM.empty():
