@@ -36,12 +36,13 @@ def load_json(json_file):
 arrayName = "Rpi__1"
 sensorId = "Sensor_"
 
-sensorPins = [board.D26, board.D19, board.D13]
-motorPins = [25, 8 , 7]
+sensorPins = [board.D26, board.D19, board.D13,board.D6]
+motorPins = [25, 8 , 7,16]
+
 
 if __name__ == "__main__":
     interval = 5
-    num_instances = 3
+    num_instances = 4
     awsState= False
     awsBool = os.getenv('AWSBOOL')
     if str(awsBool).lower() == 'true':
@@ -157,8 +158,13 @@ if __name__ == "__main__":
                 
                 if sensor_queues[i].empty():
                     sensor_queues[i].put(sensor)
-        minInterval=interval*60
-        time.sleep(interval)  # Sleep based on the interval to avoid rapid looping
+                    minInterval=interval*60
+                time.sleep(minInterval)
+            else: 
+                 time.sleep(interval)
+
+        
+          # Sleep based on the interval to avoid rapid looping
 
     # Wait for processes to complete (if needed)
     for process in processes:

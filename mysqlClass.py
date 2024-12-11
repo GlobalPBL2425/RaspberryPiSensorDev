@@ -87,71 +87,86 @@ class Controller:
         return rounded_now
 
 class MySQL:
-    def __init__(self, sensor_ID, arrayName , db_host ,db_port):
-        load_dotenv()
+    def __init__(self, sensor_ID, arrayName, db_host, db_port):
+        self.db_host = db_host
+        self.db_port = db_port
+        self.db_user = os.getenv('DB_USER')
+        self.db_password = os.getenv('DB_PASSWORD')
+        self.db_name = os.getenv('DB_NAME')
+        self.db_charset = os.getenv('DB_CHARSET', 'utf8mb4')  # Default to 'utf8mb4'
 
-        
-        # Retrieve database credentials from environment variables
-        db_host = os.getenv('DB_HOST')
-        db_port = int(os.getenv('DB_PORT', 3306))  # Use default port 3306 if not specified
-        db_user = os.getenv('DB_USER')
-        db_password = os.getenv('DB_PASSWORD')
-        db_name = os.getenv('DB_NAME')
-        db_charset = os.getenv('DB_CHARSET', 'utf8mb4')  # Default to 'utf8mb4'
-
-        self.conn = pymysql.connect(host= db_host, 
-                            port=db_port, 
-                            user=db_user, 
-                            passwd=db_password, 
-                            db=db_name, 
-                            charset=db_charset,  
-                            cursorclass=pymysql.cursors.DictCursor, 
-                            autocommit=False) 
-        self.cursor = self.conn.cursor()
         self.sensor_ID = sensor_ID
         self.arrayName = arrayName
+        self.conn = None
+        self.cursor = None
+        self.connect()
         self.on_start()
+
+    def connect(self):
+        """Establish a connection to the MySQL database."""
+        try:
+            self.conn = pymysql.connect(
+                host=self.db_host,
+                port=self.db_port,
+                user=self.db_user,
+                passwd=self.db_password,
+                db=self.db_name,
+                charset=self.db_charset,
+                cursorclass=pymysql.cursors.DictCursor,
+                autocommit=False
+            )
+            self.cursor = self.conn.cursor()
+            print("Database connection established.")
+        except Exception as e:
+            print(f"Failed to connect to database: {e}")
+
+    def reconnect(self):
+        """Re-establish the connection if it is lost."""
+        if self.conn is None or not self.conn.open:
+            print("Reconnecting to the database...")
+            self.connect()
+
     def on_start(self):
-
-        #One table(ID , Robot ID ,timestamp TIMESTAMP , humidity FLOAT NOT NULL, temperature FLOAT NOT NULL , (command type (auto/timer)){thersholds}, PWM of motor(%))
-        readingTable = f"""CREATE TABLE IF NOT EXISTS SensorReading (
-                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    robotId VARCHAR(128) NOT NULL,
-                    sensorId VARCHAR(128) NOT NULL,
-                    timestamp TIMESTAMP NOT NULL,
-                    temperature FLOAT NOT NULL,
-                    humidity FLOAT NOT NULL,
-                    controlMode VARCHAR(128) NOT NULL,
-                    motorInterval FLOAT 
-                    )
-                    ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
-        self.cursor.execute(readingTable)
-        #another table (temperature conditions (cold , hot , normal),)
-        
-        """
-        Arraycommand = f"INSERT INTO ArrayTable (sensor_ID, array_Name) VALUES (%s, %s)"
+        """Initialize required database structures."""
         try:
-            # Execute the SQL command with parameters to avoid SQL injection
-            self.cursor.execute(Arraycommand, (self.sensor_ID, self.arrayName))
-            self.conn.commit()  # Commit the transaction
+            reading_table = f"""CREATE TABLE IF NOT EXISTS SensorReading (
+                        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                        robotId VARCHAR(128) NOT NULL,
+                        sensorId VARCHAR(128) NOT NULL,
+                        timestamp TIMESTAMP NOT NULL,
+                        temperature FLOAT NOT NULL,
+                        humidity FLOAT NOT NULL,
+                        controlMode VARCHAR(128) NOT NULL,
+                        motorInterval FLOAT
+                        )
+                        ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"""
+            self.cursor.execute(reading_table)
+        except Exception as e:
+            print(f"Error during table creation: {e}")
+            self.reconnect()
+
+    def upload(self, robotId, sensor_ID, temperature, humidity, timestamp, controlMode, motorInterval):
+        """Upload data to the database."""
+        self.reconnect()
+        sqlcommand = f"""INSERT INTO SensorReading 
+                         (robotId, sensorId, timestamp, temperature, humidity, controlMode, motorInterval) 
+                         VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+        try:
+            self.cursor.execute(sqlcommand, (robotId, sensor_ID, timestamp, temperature, humidity, controlMode, motorInterval))
+            self.conn.commit()
         except Exception as e:
             print(f"Error during data insertion: {e}")
-            self.conn.rollback()  # Roll back the transaction in case of an error
-        """
+            self.conn.rollback()
+            self.reconnect()
 
-    def upload(self, robotId,sensor_ID , temperature, humidity, timestamp,controlMode ,motorInterval):
-        sqlcommand = f"INSERT INTO SensorReading (robotId,sensorId, timestamp, temperature, humidity, controlMode ,motorInterval) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-        try:
-            # Execute the SQL command with parameters to avoid SQL injection
-            self.cursor.execute(sqlcommand, (robotId,sensor_ID, timestamp, temperature, humidity, controlMode ,motorInterval))
-            self.conn.commit()  # Commit the transaction
-        except Exception as e:
-            print(f"Error during data insertion: {e}")
-            self.conn.rollback()  # Roll back the transaction in case of an error
-    
     def stop(self):
-        self.cursor.close()
-        self.conn.close()
+        """Close the database connection."""
+        if self.cursor:
+            self.cursor.close()
+        if self.conn:
+            self.conn.close()
+        print("Database connection closed.")
+
 
 
 
